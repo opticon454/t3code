@@ -23,13 +23,23 @@ export interface LlamaSwapView {
 export function useLlamaSwapStatus(
   environmentId: EnvironmentId | null,
   entry: ProviderInstanceEntry | undefined,
+  /** The upstream provider id, for OpenCode and Pi. */
+  subProvider?: string,
 ): LlamaSwapView | null {
-  const watched = environmentId !== null && entry?.snapshot.auth.endpoint !== undefined;
+  const watched =
+    environmentId !== null &&
+    entry !== undefined &&
+    (subProvider === undefined
+      ? entry.snapshot.auth.endpoint !== undefined
+      : entry.snapshot.subProviderEndpoints?.[subProvider] !== undefined);
   const query = useEnvironmentQuery(
     watched
       ? serverEnvironment.llamaSwapStatus({
           environmentId,
-          input: { instanceId: entry.instanceId },
+          input: {
+            instanceId: entry.instanceId,
+            ...(subProvider === undefined ? {} : { subProvider }),
+          },
         })
       : null,
     useMessages(),
@@ -43,6 +53,13 @@ export function useLlamaSwapStatus(
     status: query.data,
     canUnload,
     unload: (model) =>
-      void unloadCommand({ environmentId, input: { instanceId: entry.instanceId, model } }),
+      void unloadCommand({
+        environmentId,
+        input: {
+          instanceId: entry.instanceId,
+          ...(subProvider === undefined ? {} : { subProvider }),
+          model,
+        },
+      }),
   };
 }

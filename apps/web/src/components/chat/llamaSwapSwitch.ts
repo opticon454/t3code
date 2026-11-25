@@ -26,7 +26,7 @@ export function planLlamaSwapSwitch(input: {
   readonly endpoint: string;
   readonly threads: ReadonlyArray<SwapThread>;
   readonly projectTitles: ReadonlyMap<string, string>;
-  readonly endpointOf: (instanceId: string) => string | undefined;
+  readonly locate: Parameters<typeof modelSwapConflicts>[0]["locate"];
   readonly unloadModel?: string;
 }): LlamaSwapSwitchPlan | null {
   const loaded = input.status.running.find((entry) => entry.state === "ready");
@@ -38,7 +38,7 @@ export function planLlamaSwapSwitch(input: {
       : modelSwapConflicts({
           threads: input.threads,
           projectTitles: input.projectTitles,
-          endpointOf: input.endpointOf,
+          locate: input.locate,
           endpoint: input.endpoint,
           loadedModel,
         });

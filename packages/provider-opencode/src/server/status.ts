@@ -39,6 +39,7 @@ import type { ProbedOpenCode } from "./versionProbe.ts";
 import type { Agent, ProviderListResponse } from "@opencode-ai/sdk/v2";
 import { ServiceUnavailableError } from "@opencode/protocol/errors";
 import * as OpenCodeServerOwner from "./OpenCodeServerOwner.ts";
+import { openCodeSubProviderEndpoints } from "./subProviderEndpoints.ts";
 
 const OPENCODE_PRESENTATION = {
   displayName: "OpenCode",
@@ -1163,6 +1164,10 @@ export const checkOpenCodeProviderStatus = Effect.fn("checkOpenCodeProviderStatu
   const models =
     catalogModels ??
     providerModelsFromSettings([], customModels, DEFAULT_OPENCODE_MODEL_CAPABILITIES);
+  const subProviderEndpoints = openCodeSubProviderEndpoints(
+    inventoryExit.value.providerList.all,
+    inventoryExit.value.providerList.connected,
+  );
   const skills = openCodeSkillsToServerProviderSkills(inventoryExit.value.skills);
   const connectedCount = inventoryExit.value.providerList.connected.length;
   const catalogReady = connectedCount > 0 && catalogModels !== undefined;
@@ -1196,5 +1201,6 @@ export const checkOpenCodeProviderStatus = Effect.fn("checkOpenCodeProviderStatu
       },
     }),
     ...installedVersion,
+    ...(subProviderEndpoints ? { subProviderEndpoints } : {}),
   };
 });

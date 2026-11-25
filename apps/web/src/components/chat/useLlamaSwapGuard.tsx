@@ -6,6 +6,7 @@ import type { ProviderInstanceEntry } from "../../providerInstances";
 import { environmentProjects } from "../../state/projects";
 import { environmentThreadShells } from "../../state/threads";
 import { type LlamaSwapConfirmation } from "./LlamaSwapConfirmDialog";
+import { locateLlamaSwapModel } from "@t3tools/client-runtime/state/llamaSwap";
 import { planLlamaSwapSwitch } from "./llamaSwapSwitch";
 
 /**
@@ -28,11 +29,14 @@ export function useLlamaSwapGuard(
     proceed: () => void;
   }) => {
     const entry = instanceEntries.find((candidate) => candidate.instanceId === input.instanceId);
-    const endpoint = entry?.snapshot.auth.endpoint;
-    if (!entry || !endpoint || environmentId === null) return input.proceed();
-    const endpointOf = (instanceId: string) =>
-      instanceEntries.find((candidate) => candidate.instanceId === instanceId)?.snapshot.auth
-        .endpoint;
+    const place = entry && locateLlamaSwapModel(entry.snapshot, input.model);
+    if (!entry || !place || environmentId === null) return input.proceed();
+    const locate = (instanceId: string, model: string) => {
+      const snapshot = instanceEntries.find(
+        (candidate) => candidate.instanceId === instanceId,
+      )?.snapshot;
+      return snapshot && locateLlamaSwapModel(snapshot, model);
+    };
     const threads = registry
       .get(environmentThreadShells.quietThreadShellsAtom)
       .filter((thread) => thread.environmentId === environmentId)
@@ -55,12 +59,12 @@ export function useLlamaSwapGuard(
     const plan = planLlamaSwapSwitch({
       status: input.status,
       driver: entry.driverKind,
-      picked: input.kind === "unload" ? null : input.model,
-      ...(input.kind === "unload" ? { unloadModel: input.model } : {}),
-      endpoint,
+      picked: input.kind === "unload" ? null : place.modelId,
+      ...(input.kind === "unload" ? { unloadModel: place.modelId } : {}),
+      endpoint: place.endpoint,
       threads,
       projectTitles,
-      endpointOf,
+      locate,
     });
     if (!plan) return input.proceed();
     setConfirmation({ kind: input.kind, model: input.model, plan, proceed: input.proceed });

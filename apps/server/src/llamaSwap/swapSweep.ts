@@ -3,7 +3,9 @@ import type { LlamaSwapStatus, LlamaSwapSwapEvent } from "@t3tools/contracts";
 export interface SweepThread {
   readonly id: LlamaSwapSwapEvent["threadId"];
   readonly projectId: LlamaSwapSwapEvent["projectId"];
-  readonly instanceId: string;
+  /** The llama-swap origin this thread's model is served from. */
+  readonly origin: string;
+  /** The model id llama-swap knows it by. */
   readonly model: string;
 }
 
@@ -14,12 +16,12 @@ export interface SweepThread {
  */
 export function sweepSwappedOut(input: {
   readonly threads: ReadonlyArray<SweepThread>;
-  readonly statusByInstance: ReadonlyMap<string, LlamaSwapStatus>;
+  readonly statusByOrigin: ReadonlyMap<string, LlamaSwapStatus>;
   readonly notified: Set<string>;
 }): ReadonlyArray<LlamaSwapSwapEvent> {
   const events: Array<LlamaSwapSwapEvent> = [];
   for (const thread of input.threads) {
-    const status = input.statusByInstance.get(thread.instanceId);
+    const status = input.statusByOrigin.get(thread.origin);
     if (!status?.supported) continue;
     const key = `${thread.id}\0${thread.model}`;
     if (status.running.some((entry) => entry.model === thread.model)) {

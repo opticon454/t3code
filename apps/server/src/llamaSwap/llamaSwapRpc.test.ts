@@ -10,7 +10,11 @@ import { makeLlamaSwapRpc } from "./llamaSwapRpc.ts";
 
 const id = ProviderInstanceId.make("claude-local");
 
-const instances = (endpoint: string | undefined, environment: Array<[string, string]> = []) =>
+const instances = (
+  endpoint: string | undefined,
+  environment: Array<[string, string]> = [],
+  subProviderEndpoints?: Record<string, string>,
+) =>
   ({
     getInstance: (requested: ProviderInstanceId) =>
       Effect.succeed(
@@ -22,7 +26,10 @@ const instances = (endpoint: string | undefined, environment: Array<[string, str
                 sensitive: true,
               })),
               snapshot: {
-                getSnapshot: Effect.succeed({ auth: { status: "authenticated", endpoint } }),
+                getSnapshot: Effect.succeed({
+                  auth: { status: "authenticated", endpoint },
+                  ...(subProviderEndpoints ? { subProviderEndpoints } : {}),
+                }),
               },
             }
           : undefined,
@@ -99,12 +106,34 @@ effectIt.live("swapEvents stays silent when no instance has a custom endpoint", 
     const events = yield* makeLlamaSwapRpc(
       {
         getInstance: () => Effect.undefined,
-        listInstances: Effect.succeed([{ instanceId: id }]),
+        listInstances: Effect.succeed([
+          {
+            instanceId: id,
+            snapshot: { getSnapshot: Effect.succeed({ auth: { status: "unknown" } }) },
+          },
+        ]),
       } as never,
       swap(calls),
       Effect.succeed([]),
     ).swapEvents.pipe(Stream.take(1), Stream.runCollect, Effect.timeoutOption("50 millis"));
     expect(events).toEqual(Option.none());
     expect(calls).toEqual([]);
+  }),
+);
+
+effectIt.effect("unloads on the endpoint of the named upstream provider", () =>
+  Effect.gen(function* () {
+    const calls: Array<unknown> = [];
+    const rpc = makeLlamaSwapRpc(
+      instances(undefined, [["LLAMA_SWAP_API_KEY", "k"]], { swap: "http://10.0.0.9:9292/v1" }),
+      swap(calls),
+      Effect.succeed([]),
+    );
+    yield* rpc.unload({ instanceId: id, subProvider: "swap", model: "qwen" });
+    expect(calls).toEqual([["unload", { origin: "http://10.0.0.9:9292", apiKey: "k" }, "qwen"]]);
+    const missing = yield* Effect.flip(
+      rpc.unload({ instanceId: id, subProvider: "other", model: "qwen" }),
+    );
+    expect(missing.message).toBe("This provider instance does not use a custom endpoint.");
   }),
 );

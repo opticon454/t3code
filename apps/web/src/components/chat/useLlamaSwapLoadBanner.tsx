@@ -1,5 +1,6 @@
 import type { EnvironmentId } from "@t3tools/contracts";
 import { useGT } from "gt-react";
+import { locateLlamaSwapModel } from "@t3tools/client-runtime/state/llamaSwap";
 import { LoaderIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -36,8 +37,13 @@ export function useLlamaSwapLoadBanner(input: {
   busy: boolean;
 }): ComposerBannerStackItem | null {
   const gt = useGT();
-  const view = useLlamaSwapStatus(input.environmentId, input.busy ? input.entry : undefined);
-  const stage = view ? llamaSwapLoadStage(view.status, input.model) : null;
+  const place = input.entry && locateLlamaSwapModel(input.entry.snapshot, input.model);
+  const view = useLlamaSwapStatus(
+    input.environmentId,
+    input.busy ? input.entry : undefined,
+    place?.subProvider,
+  );
+  const stage = view && place ? llamaSwapLoadStage(view.status, place.modelId) : null;
   const elapsed = useElapsedSeconds(stage !== null);
   if (!view || !stage) return null;
   return {

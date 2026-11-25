@@ -6,11 +6,14 @@ import { ProviderInstanceId } from "./providerInstance.ts";
 /** A llama-swap server is addressed by the provider instance that uses it, never by URL. */
 export const LlamaSwapSubscribeInput = Schema.Struct({
   instanceId: ProviderInstanceId,
+  /** The upstream provider id for OpenCode and Pi, which can point each one at its own server. */
+  subProvider: Schema.optional(TrimmedNonEmptyString),
 });
 export type LlamaSwapSubscribeInput = typeof LlamaSwapSubscribeInput.Type;
 
 export const LlamaSwapUnloadInput = Schema.Struct({
   instanceId: ProviderInstanceId,
+  subProvider: Schema.optional(TrimmedNonEmptyString),
   model: TrimmedNonEmptyString,
 });
 export type LlamaSwapUnloadInput = typeof LlamaSwapUnloadInput.Type;

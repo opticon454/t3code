@@ -21,13 +21,18 @@ type Instances = ProviderInstanceRegistry.ProviderInstanceRegistry["Service"];
 const resolveInstanceEndpoint = Effect.fn("LlamaSwapRpc.resolveInstanceEndpoint")(function* (
   instances: Instances,
   instanceId: ProviderInstanceId,
+  subProvider?: string,
 ) {
   const instance = yield* instances.getInstance(instanceId);
   if (!instance) {
     return yield* new LlamaSwapError({ instanceId, detail: "Unknown provider instance." });
   }
   const snapshot = yield* instance.snapshot.getSnapshot;
-  const origin = snapshot.auth.endpoint && normalizeLlamaSwapOrigin(snapshot.auth.endpoint);
+  const configured =
+    subProvider === undefined
+      ? snapshot.auth.endpoint
+      : snapshot.subProviderEndpoints?.[subProvider];
+  const origin = configured && normalizeLlamaSwapOrigin(configured);
   if (!origin) {
     return yield* new LlamaSwapError({
       instanceId,
@@ -46,13 +51,21 @@ export const makeLlamaSwapRpc = (
   llamaSwap: LlamaSwapService["Service"],
   /** Live threads with a provider session, which a swap-out could interrupt. */
   readThreads: Effect.Effect<
-    ReadonlyArray<SweepThread & { readonly instanceId: ProviderInstanceId }>
+    ReadonlyArray<{
+      readonly id: SweepThread["id"];
+      readonly projectId: SweepThread["projectId"];
+      readonly instanceId: ProviderInstanceId;
+      readonly model: string;
+    }>
   >,
 ) => ({
   /** Re-reads once a second and emits only when something changed. */
-  subscribe: (input: { readonly instanceId: ProviderInstanceId }) =>
+  subscribe: (input: {
+    readonly instanceId: ProviderInstanceId;
+    readonly subProvider?: string | undefined;
+  }) =>
     Stream.unwrap(
-      resolveInstanceEndpoint(instances, input.instanceId).pipe(
+      resolveInstanceEndpoint(instances, input.instanceId, input.subProvider).pipe(
         Effect.map((endpoint) =>
           Stream.fromEffectSchedule(
             Effect.gen(function* () {
@@ -77,27 +90,58 @@ export const makeLlamaSwapRpc = (
   swapEvents: Stream.suspend(() => {
     const notified = new Set<string>();
     const sweep = Effect.gen(function* () {
-      const all = yield* instances.listInstances;
-      const endpoints = new Map<ProviderInstanceId, LlamaSwapEndpoint>();
-      for (const instance of all) {
-        const endpoint = yield* resolveInstanceEndpoint(instances, instance.instanceId).pipe(
-          Effect.option,
-        );
-        if (Option.isSome(endpoint)) endpoints.set(instance.instanceId, endpoint.value);
+      let anyEndpoint = false;
+      for (const instance of yield* instances.listInstances) {
+        const snapshot = yield* instance.snapshot.getSnapshot;
+        anyEndpoint ||= Boolean(snapshot.auth.endpoint || snapshot.subProviderEndpoints);
       }
-      if (endpoints.size === 0) return [];
+      if (!anyEndpoint) return [];
+      // OpenCode and Pi prefix a slug with the upstream provider, which owns the endpoint.
+      const located = new Map<
+        string,
+        Option.Option<{ endpoint: LlamaSwapEndpoint; model: string }>
+      >();
+      const locate = Effect.fn("LlamaSwapRpc.locate")(function* (
+        instanceId: ProviderInstanceId,
+        model: string,
+      ) {
+        const slash = model.indexOf("/");
+        const key = `${instanceId}\0${slash < 0 ? "" : model.slice(0, slash)}`;
+        const known = located.get(key);
+        if (known) return known;
+        const viaProvider =
+          slash < 0
+            ? Option.none()
+            : yield* resolveInstanceEndpoint(instances, instanceId, model.slice(0, slash)).pipe(
+                Effect.option,
+              );
+        const found = Option.isSome(viaProvider)
+          ? Option.some({ endpoint: viaProvider.value, model: model.slice(slash + 1) })
+          : (yield* resolveInstanceEndpoint(instances, instanceId).pipe(Effect.option)).pipe(
+              Option.map((endpoint) => ({ endpoint, model })),
+            );
+        located.set(key, found);
+        return found;
+      });
+      const threads: Array<SweepThread> = [];
+      const endpointByOrigin = new Map<string, LlamaSwapEndpoint>();
+      for (const thread of yield* readThreads) {
+        const place = yield* locate(thread.instanceId, thread.model);
+        if (Option.isNone(place)) continue;
+        endpointByOrigin.set(place.value.endpoint.origin, place.value.endpoint);
+        threads.push({
+          id: thread.id,
+          projectId: thread.projectId,
+          origin: place.value.endpoint.origin,
+          model: place.value.model,
+        });
+      }
+      if (threads.length === 0) return [];
       const statusByOrigin = new Map<string, LlamaSwapStatus>();
-      const statusByInstance = new Map<string, LlamaSwapStatus>();
-      for (const [instanceId, endpoint] of endpoints) {
-        let status = statusByOrigin.get(endpoint.origin);
-        if (!status) {
-          status = yield* llamaSwap.status(endpoint);
-          statusByOrigin.set(endpoint.origin, status);
-        }
-        statusByInstance.set(instanceId, status);
+      for (const [origin, endpoint] of endpointByOrigin) {
+        statusByOrigin.set(origin, yield* llamaSwap.status(endpoint));
       }
-      const threads = (yield* readThreads).filter((thread) => endpoints.has(thread.instanceId));
-      return sweepSwappedOut({ threads, statusByInstance, notified });
+      return sweepSwappedOut({ threads, statusByOrigin, notified });
     });
     return Stream.fromEffectSchedule(sweep, Schedule.spaced(SWEEP_INTERVAL)).pipe(
       Stream.filter((events) => events.length > 0),
@@ -105,9 +149,10 @@ export const makeLlamaSwapRpc = (
   }),
   unload: Effect.fn("LlamaSwapRpc.unload")(function* (input: {
     readonly instanceId: ProviderInstanceId;
+    readonly subProvider?: string | undefined;
     readonly model: string;
   }) {
-    const endpoint = yield* resolveInstanceEndpoint(instances, input.instanceId);
+    const endpoint = yield* resolveInstanceEndpoint(instances, input.instanceId, input.subProvider);
     yield* llamaSwap
       .unload(endpoint, input.model)
       .pipe(

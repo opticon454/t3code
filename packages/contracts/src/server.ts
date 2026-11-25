@@ -279,6 +279,11 @@ export const ServerProvider = Schema.Struct({
   models: Schema.Array(ServerProviderModel),
   // Pickers group `models` under these, in order, by `subProvider`.
   subProviders: Schema.optional(Schema.Array(ServerProviderSubProvider)),
+  /**
+   * Origin each upstream provider's requests go to, keyed by the provider id that prefixes its
+   * model slugs. Only providers with a custom base URL are listed (OpenCode and Pi).
+   */
+  subProviderEndpoints: Schema.optional(Schema.Record(Schema.String, TrimmedNonEmptyString)),
   // Set for the one failed check that follows a ready one: pickers keep offering `models`.
   modelsRetained: Schema.optionalKey(Schema.Boolean),
   // Kept apart from `models` so clients that predate it never offer them.

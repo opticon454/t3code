@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { contextWarning, modelSwapConflicts, type SwapThread } from "./llamaSwap.ts";
+import {
+  contextWarning,
+  locateLlamaSwapModel,
+  modelSwapConflicts,
+  type SwapThread,
+} from "./llamaSwap.ts";
 
 const thread = (
   id: string,
@@ -16,8 +21,12 @@ const thread = (
     modelSelection: { instanceId: over.instance ?? "a", model: over.model ?? "qwen" },
   }) satisfies SwapThread;
 
-const endpointOf = (instanceId: string) =>
-  ({ a: "http://swap:8080", b: "http://swap:8080", c: "http://other:1" })[instanceId];
+const locate = (instanceId: string, model: string) => {
+  const endpoint = { a: "http://swap:8080", b: "http://swap:8080", c: "http://other:1" }[
+    instanceId
+  ];
+  return endpoint ? { endpoint, modelId: model } : undefined;
+};
 
 describe("modelSwapConflicts", () => {
   const base = {
@@ -25,7 +34,7 @@ describe("modelSwapConflicts", () => {
       ["p1", "Alpha"],
       ["p2", "Beta"],
     ]),
-    endpointOf,
+    locate,
     endpoint: "http://swap:8080",
     loadedModel: "qwen",
   };
@@ -88,5 +97,28 @@ describe("contextWarning", () => {
 
   it("stays quiet for a provider with no measured floor", () => {
     expect(contextWarning({ driver: "codex", contextTokens: 1024, slots: 1 })).toBeUndefined();
+  });
+});
+
+describe("locateLlamaSwapModel", () => {
+  const snapshot = {
+    auth: { endpoint: "http://claude:1" },
+    subProviderEndpoints: { swap: "http://swap:8080" },
+  };
+
+  it("uses the upstream provider's endpoint and strips its prefix", () => {
+    expect(locateLlamaSwapModel(snapshot, "swap/qwen")).toEqual({
+      endpoint: "http://swap:8080",
+      modelId: "qwen",
+      subProvider: "swap",
+    });
+  });
+
+  it("falls back to the instance endpoint with the whole slug", () => {
+    expect(locateLlamaSwapModel(snapshot, "org/qwen")).toEqual({
+      endpoint: "http://claude:1",
+      modelId: "org/qwen",
+    });
+    expect(locateLlamaSwapModel({ auth: {} }, "qwen")).toBeUndefined();
   });
 });

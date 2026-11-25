@@ -549,7 +549,7 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
     if (!resolvedModel) return null;
     if (additive && onToggleModel) {
       onToggleModel(instanceId, resolvedModel);
-    } else if (llamaSwap && instanceId === selectedEntry?.instanceId) {
+    } else if (llamaSwap && instanceId === swapEntry?.instanceId) {
       // A dialog may take over; the pick then completes on confirm.
       let proceeded = false;
       swapGuard.guard({
@@ -718,10 +718,24 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
   const instanceOrder = instanceEntries.map((entry) => entry.instanceId);
 
   const swapGuard = useLlamaSwapGuard(props.environmentId, instanceEntries);
-  const llamaSwap = useLlamaSwapStatus(
-    props.environmentId,
-    selectedInstanceId === "favorites" ? undefined : entryByInstanceId.get(selectedInstanceId),
-  );
+  const swapEntry =
+    selectedInstanceId === "favorites" ? undefined : entryByInstanceId.get(selectedInstanceId);
+  // OpenCode and Pi each upstream provider can have its own server; follow the one in use.
+  const swapSubProvider = (() => {
+    const endpoints = swapEntry?.snapshot.subProviderEndpoints;
+    if (!endpoints) return undefined;
+    const current = props.activeInstanceId === swapEntry.instanceId ? props.model : "";
+    const prefix = current.includes("/") ? current.slice(0, current.indexOf("/")) : "";
+    return prefix in endpoints ? prefix : Object.keys(endpoints)[0];
+  })();
+  /** The id llama-swap knows a slug by, or undefined when another server owns it. */
+  const swapModelId = (slug: string): string | undefined =>
+    swapSubProvider === undefined
+      ? slug
+      : slug.startsWith(`${swapSubProvider}/`)
+        ? slug.slice(swapSubProvider.length + 1)
+        : undefined;
+  const llamaSwap = useLlamaSwapStatus(props.environmentId, swapEntry, swapSubProvider);
   const llamaSwapRunning = new Map(llamaSwap?.status.running.map((entry) => [entry.model, entry]));
   const llamaSwapContext = new Map(llamaSwap?.status.models.map((entry) => [entry.id, entry]));
 
@@ -764,8 +778,8 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
     return llamaSwapRunning.size === 0
       ? sorted
       : [
-          ...sorted.filter((model) => llamaSwapRunning.has(model.slug)),
-          ...sorted.filter((model) => !llamaSwapRunning.has(model.slug)),
+          ...sorted.filter((model) => llamaSwapRunning.has(swapModelId(model.slug) ?? "")),
+          ...sorted.filter((model) => !llamaSwapRunning.has(swapModelId(model.slug) ?? "")),
         ];
   })();
 
@@ -1266,18 +1280,25 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
                     showInstanceBadge={badgedInstanceIds.has(model.instanceId)}
                     showNewBadge={model.badge === "new"}
                     unavailable={model.isUnavailable === true}
-                    {...(model.instanceId === selectedEntry?.instanceId && llamaSwap
-                      ? llamaSwapRowProps(model.slug, llamaSwapRunning, llamaSwapContext, {
-                          canUnload: llamaSwap.canUnload,
-                          unload: (slug) =>
-                            swapGuard.guard({
-                              instanceId: model.instanceId,
-                              status: llamaSwap.status,
-                              model: slug,
-                              kind: "unload",
-                              proceed: () => llamaSwap.unload(slug),
-                            }),
-                        })
+                    {...(model.instanceId === selectedEntry?.instanceId &&
+                    llamaSwap &&
+                    swapModelId(model.slug) !== undefined
+                      ? llamaSwapRowProps(
+                          swapModelId(model.slug)!,
+                          llamaSwapRunning,
+                          llamaSwapContext,
+                          {
+                            canUnload: llamaSwap.canUnload,
+                            unload: (modelId) =>
+                              swapGuard.guard({
+                                instanceId: model.instanceId,
+                                status: llamaSwap.status,
+                                model: model.slug,
+                                kind: "unload",
+                                proceed: () => llamaSwap.unload(modelId),
+                              }),
+                          },
+                        )
                       : {})}
                     jumpLabel={modelJumpLabelByKey.get(modelKey) ?? null}
                     disabledReason={disabledReason}

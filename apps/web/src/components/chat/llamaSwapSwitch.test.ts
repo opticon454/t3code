@@ -26,7 +26,7 @@ const base = {
   endpoint: "http://swap",
   threads: [thread("t1", "p1", "qwen")],
   projectTitles: new Map([["p1", "Alpha"]]),
-  endpointOf: () => "http://swap",
+  locate: (_instance: string, model: string) => ({ endpoint: "http://swap", modelId: model }),
 };
 
 it("names who loses the loaded model and warns about a small window", () => {
