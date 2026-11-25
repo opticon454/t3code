@@ -17,15 +17,15 @@ export interface LlamaSwapView {
 
 /**
  * Live llama-swap state for the instance the picker is showing. It subscribes only while this
- * is mounted, and only for an instance with a custom endpoint. Null when that endpoint is not
- * llama-swap.
+ * is mounted, and only for an instance with a custom endpoint. The view is null when that
+ * endpoint is not llama-swap or rejected the key, which `authFailed` reports.
  */
 export function useLlamaSwapStatus(
   environmentId: EnvironmentId | null,
   entry: ProviderInstanceEntry | undefined,
   /** The upstream provider id, for OpenCode and Pi. */
   subProvider?: string,
-): LlamaSwapView | null {
+): { readonly view: LlamaSwapView | null; readonly authFailed: boolean } {
   const watched =
     environmentId !== null &&
     entry !== undefined &&
@@ -48,18 +48,22 @@ export function useLlamaSwapStatus(
     serverEnvironment.unloadLlamaSwapModel.permissionAtom(environmentId),
   );
   const unloadCommand = useAtomCommand(serverEnvironment.unloadLlamaSwapModel);
-  if (!watched || !query.data?.supported) return null;
+  const authFailed = watched && query.data?.authFailed === true;
+  if (!watched || !query.data?.supported) return { view: null, authFailed };
   return {
-    status: query.data,
-    canUnload,
-    unload: (model) =>
-      void unloadCommand({
-        environmentId,
-        input: {
-          instanceId: entry.instanceId,
-          ...(subProvider === undefined ? {} : { subProvider }),
-          model,
-        },
-      }),
+    authFailed: false,
+    view: {
+      status: query.data,
+      canUnload,
+      unload: (model) =>
+        void unloadCommand({
+          environmentId,
+          input: {
+            instanceId: entry.instanceId,
+            ...(subProvider === undefined ? {} : { subProvider }),
+            model,
+          },
+        }),
+    },
   };
 }

@@ -176,13 +176,21 @@ interface LoadedModelsTarget {
   readonly subProvider?: string;
 }
 
+interface LlamaSwapLoadedModels {
+  /** `instanceId\0slug` of every model llama-swap has loaded. */
+  readonly loaded: ReadonlySet<string>;
+  /** Instances whose endpoint rejected the API key. */
+  readonly authFailed: ReadonlySet<string>;
+}
+
 const loadedModelsAtom = Atom.family((key: string) =>
-  Atom.make((get): ReadonlySet<string> => {
+  Atom.make((get): LlamaSwapLoadedModels => {
     const { environmentId, targets } = JSON.parse(key) as {
       environmentId: EnvironmentId;
       targets: ReadonlyArray<LoadedModelsTarget>;
     };
     const loaded = new Set<string>();
+    const authFailed = new Set<string>();
     for (const target of targets) {
       const status = AsyncResult.getOrElse(
         get(
@@ -196,24 +204,25 @@ const loadedModelsAtom = Atom.family((key: string) =>
         ),
         () => null,
       );
+      if (status?.authFailed) authFailed.add(target.instanceId);
       if (!status?.supported) continue;
       const prefix = target.subProvider === undefined ? "" : `${target.subProvider}/`;
       for (const entry of status.running) {
         if (entry.state === "ready") loaded.add(`${target.instanceId}\0${prefix}${entry.model}`);
       }
     }
-    return loaded;
+    return { loaded, authFailed };
   }),
 );
 
 /**
- * The models llama-swap has loaded, as `instanceId\0slug`, for the instances in a model list.
- * The picker sorts these first.
+ * What llama-swap reports for the instances in a model list: the models it has loaded, which
+ * the picker sorts first, and the instances whose key it rejected.
  */
 export function useLlamaSwapLoadedModels(
   environmentId: EnvironmentId | null,
   instanceIds: ReadonlyArray<string>,
-): ReadonlySet<string> {
+): LlamaSwapLoadedModels {
   const configs = useAtomValue(environmentServerConfigsAtom);
   const providers = environmentId ? (configs.get(environmentId)?.providers ?? []) : [];
   const targets = [...new Set(instanceIds)].flatMap((instanceId): Array<LoadedModelsTarget> => {

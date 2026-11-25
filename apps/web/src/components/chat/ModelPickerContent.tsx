@@ -735,7 +735,11 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
       : slug.startsWith(`${swapSubProvider}/`)
         ? slug.slice(swapSubProvider.length + 1)
         : undefined;
-  const llamaSwap = useLlamaSwapStatus(props.environmentId, swapEntry, swapSubProvider);
+  const { view: llamaSwap, authFailed: llamaSwapAuthFailed } = useLlamaSwapStatus(
+    props.environmentId,
+    swapEntry,
+    swapSubProvider,
+  );
   const llamaSwapRunning = new Map(llamaSwap?.status.running.map((entry) => [entry.model, entry]));
   const llamaSwapContext = new Map(llamaSwap?.status.models.map((entry) => [entry.id, entry]));
 
@@ -1320,6 +1324,13 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
               onRequestClose={onRequestClose}
               onOpenProviderSetup={onOpenProviderSetup}
             />
+            {llamaSwapAuthFailed ? (
+              <p className="shrink-0 border-t border-border/70 px-3 py-2 text-xs leading-snug text-muted-foreground">
+                {gt(
+                  "llama-swap rejected the API key. Check it under Settings, Providers, Custom model endpoints.",
+                )}
+              </p>
+            ) : null}
             {props.listFooter}
           </div>
         </Combobox>

@@ -37,7 +37,7 @@ export function useLlamaSwapLoadBanner(input: {
 }): ComposerBannerStackItem | null {
   const gt = useGT();
   const place = input.entry && locateLlamaSwapModel(input.entry.snapshot, input.model);
-  const view = useLlamaSwapStatus(
+  const { view } = useLlamaSwapStatus(
     input.environmentId,
     input.busy ? input.entry : undefined,
     place?.subProvider,

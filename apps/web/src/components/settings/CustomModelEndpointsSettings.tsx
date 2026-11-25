@@ -330,8 +330,8 @@ function EndpointDialog({
               <p className="text-xs text-muted-foreground">
                 <T>
                   Used for models whose size cannot be discovered. It is the model&apos;s whole
-                  window; the Claude floor check divides it by the slot count when one is known.
-                  Leave empty to let each CLI assume its own default.
+                  window; the context warning divides it by the slot count when one is known. Leave
+                  empty to let each CLI assume its own default.
                 </T>
               </p>
             </div>
@@ -375,7 +375,7 @@ function EndpointDialog({
                 </SelectPopup>
               </Select>
               <p className="text-xs text-muted-foreground">
-                <T>Never sends two headers. Some servers hang if you do.</T>
+                <T>The key is sent in this header only.</T>
               </p>
             </div>
             <div className="grid gap-1.5">

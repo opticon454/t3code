@@ -2,7 +2,7 @@ import {
   getPromptControlledTraits,
   getTraitSelectChange,
 } from "@t3tools/client-runtime/model-traits";
-import { T, useGT, useLocale, useMessages } from "gt-react-native";
+import { T, msg, useGT, useLocale, useMessages } from "gt-react-native";
 import * as Dialog from "../../components/ui/Dialog";
 import { createV5StackNavigator as createNativeStackNavigator } from "../../native/createV5StackNavigator";
 import { useSheetStackOptions } from "../layout/nested-stacks";
@@ -895,7 +895,7 @@ function buildThreadSettingsCatalogItems(
   session: ThreadSettingsSessionValue,
   resolve: MessageResolver,
   locale: string,
-  loadedModels: ReadonlySet<string>,
+  { loaded: loadedModels, authFailed }: ReturnType<typeof useLlamaSwapLoadedModels>,
 ): ReadonlyArray<ThreadSettingsCatalogItem> {
   return session.providerGroups.flatMap((group) => {
     if (session.providerFilter !== null && group.providerKey !== session.providerFilter) {
@@ -969,6 +969,19 @@ function buildThreadSettingsCatalogItems(
               kind: "notice" as const,
               key: `notice:${group.providerKey}`,
               text: updateRequiredNotice,
+            },
+          ]
+        : []),
+      ...(!collapsed && group.models.some((option) => authFailed.has(option.selection.instanceId))
+        ? [
+            {
+              kind: "notice" as const,
+              key: `notice:llama-swap-key:${group.providerKey}`,
+              text: resolve(
+                msg(
+                  "llama-swap rejected the API key. Check it under Settings, Providers, Custom model endpoints.",
+                ),
+              ),
             },
           ]
         : []),
@@ -1129,13 +1142,13 @@ function ThreadSettingsMainContent(props: {
   const reducedMotion = useReducedMotion();
   const reduceMotionEnabled = useReduceMotionEnabled();
   const animationsReady = listLoaded && !reducedMotion && !reduceMotionEnabled;
-  const loadedModels = useLlamaSwapLoadedModels(
+  const llamaSwapModels = useLlamaSwapLoadedModels(
     session.environmentId,
     session.providerGroups.flatMap((group) =>
       group.models.map((option) => option.selection.instanceId),
     ),
   );
-  const catalogItems = buildThreadSettingsCatalogItems(session, m, locale, loadedModels);
+  const catalogItems = buildThreadSettingsCatalogItems(session, m, locale, llamaSwapModels);
   const hasActiveCatalogFilter =
     session.favoritesOnly ||
     session.providerFilter !== null ||

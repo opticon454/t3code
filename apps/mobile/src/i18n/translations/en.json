@@ -4834,6 +4834,7 @@
   "a377f55ec8fe03c6": "Hide model: {provider}, {model}",
   "510cb7d39f654dfc": "Remove from favorites: {provider}, {model}",
   "39b92bb3a992a452": "Add to favorites: {provider}, {model}",
+  "494bdf7a1c79a70a": "llama-swap rejected the API key. Check it under Settings, Providers, Custom model endpoints.",
   "cbc2606e931511dd": "{provider}, {count, plural, one {{count} model} other {{count} models}}",
   "15033b76c4b20e76": "Model unavailable",
   "ed063bb30064ac7e": "Set up this provider on web or desktop, or select another model.",
