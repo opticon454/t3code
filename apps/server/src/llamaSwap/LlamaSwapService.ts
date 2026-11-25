@@ -120,7 +120,14 @@ export const fetchLlamaSwapStatus = Effect.fn("LlamaSwapService.status")(functio
   const parsed = running._tag === "ok" ? parseRunning(running.body) : undefined;
   if (!parsed) return { supported: false, authFailed: false, running: [], models: [] };
   const listing = yield* getJson(client, endpoint, "/v1/models");
-  const models = listing._tag === "ok" ? parseModelList(listing.body) : [];
+  const listed = listing._tag === "ok" ? parseModelList(listing.body) : [];
+  const fallback = endpoint.defaultContextTokens;
+  const models =
+    fallback === undefined
+      ? listed
+      : listed.map((model) =>
+          model.contextTokens === undefined ? { ...model, contextTokens: fallback } : model,
+        );
   return {
     supported: true,
     authFailed: false,

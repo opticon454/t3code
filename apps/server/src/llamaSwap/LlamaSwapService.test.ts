@@ -62,6 +62,36 @@ effectIt.effect(
   },
 );
 
+effectIt.effect("falls back to the endpoint's default context when the server reports none", () => {
+  const client = HttpClient.make((request) =>
+    request.url.endsWith("/running")
+      ? respond(
+          request,
+          Response.json({ running: [{ model: "gemma", state: "ready", cmd: "llama-server" }] }),
+        )
+      : respond(
+          request,
+          Response.json({
+            data: [{ id: "gemma" }, { id: "idle" }, { id: "big", context_length: 4096 }],
+          }),
+        ),
+  );
+  return Effect.gen(function* () {
+    const status = yield* (yield* LlamaSwap.LlamaSwapService).status({
+      ...endpoint,
+      defaultContextTokens: 65536,
+    });
+    expect(status.models).toEqual([
+      { id: "gemma", contextTokens: 65536 },
+      { id: "idle", contextTokens: 65536 },
+      { id: "big", contextTokens: 4096 },
+    ]);
+    expect(status.running).toEqual([
+      { model: "gemma", state: "ready", contextTokens: 65536, slots: 1 },
+    ]);
+  }).pipe(Effect.provide(serviceWith(client)));
+});
+
 effectIt.effect("reads a plain OpenAI-compatible server as unsupported", () => {
   const client = HttpClient.make((request) =>
     respond(request, new Response("no", { status: 404 })),
