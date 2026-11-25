@@ -3,7 +3,7 @@ import * as Effect from "effect/Effect";
 import type { HttpClient } from "effect/http";
 
 import { fetchLlamaSwapStatus } from "./LlamaSwapService.ts";
-import { resolveLlamaSwapApiKey } from "./llamaSwapProtocol.ts";
+import { resolveLlamaSwapCredential } from "./llamaSwapProtocol.ts";
 
 /**
  * Adds the models a llama-swap endpoint lists to a provider whose own catalog omits them, as
@@ -17,8 +17,10 @@ export const withLlamaSwapModels = Effect.fn("withLlamaSwapModels")(function* (
 ) {
   const origin = draft.auth.endpoint;
   if (!origin) return draft;
-  const apiKey = resolveLlamaSwapApiKey(environment);
-  const status = yield* fetchLlamaSwapStatus(client, { origin, ...(apiKey ? { apiKey } : {}) });
+  const status = yield* fetchLlamaSwapStatus(client, {
+    origin,
+    ...resolveLlamaSwapCredential(environment),
+  });
   if (!status.supported) return draft;
   const known = new Set(draft.models.map((model) => model.slug));
   const capabilities = draft.models.find((model) => model.capabilities)?.capabilities ?? null;

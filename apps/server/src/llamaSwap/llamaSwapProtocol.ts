@@ -32,24 +32,52 @@ export function normalizeLlamaSwapOrigin(value: string): string | undefined {
 }
 
 /**
- * The key llama-swap's `apiKeys` expects. `LLAMA_SWAP_API_KEY` wins, then the credential the
- * provider already sends to that endpoint. `extraNames` carries a name only the provider's
- * config knows, such as Codex's `env_key`.
+ * The credential llama-swap's `apiKeys` expects. `LLAMA_SWAP_API_KEY` wins, then the credential
+ * the provider already sends to that endpoint: a bearer or `x-api-key` variable, or a header
+ * Claude's `ANTHROPIC_CUSTOM_HEADERS` carries (the `api-key` and Basic styles). `extraNames`
+ * carries a name only the provider's config knows, such as Codex's `env_key`.
  */
-export function resolveLlamaSwapApiKey(
+export function resolveLlamaSwapCredential(
   environment: Readonly<Record<string, unknown>>,
   extraNames: ReadonlyArray<string> = [],
-): string | undefined {
+): { readonly apiKey: string; readonly authHeader?: LlamaSwapAuthHeader } | undefined {
+  const text = (name: string) => {
+    const value = environment[name];
+    return typeof value === "string" && value.trim() ? value.trim() : undefined;
+  };
   for (const name of [
     "LLAMA_SWAP_API_KEY",
     ...extraNames,
+    "T3_ENDPOINT_API_KEY",
     "ANTHROPIC_AUTH_TOKEN",
     "ANTHROPIC_API_KEY",
   ]) {
-    const value = environment[name];
-    if (typeof value === "string" && value.trim()) return value.trim();
+    const apiKey = text(name);
+    if (apiKey) return { apiKey };
+  }
+  for (const line of (text("ANTHROPIC_CUSTOM_HEADERS") ?? "").split(/\r?\n/)) {
+    const colon = line.indexOf(":");
+    if (colon < 0) continue;
+    const name = line.slice(0, colon).trim().toLowerCase();
+    const value = line.slice(colon + 1).trim();
+    if (!value) continue;
+    if (name === "api-key" || name === "x-api-key") return { apiKey: value, authHeader: name };
+    if (name === "authorization" && /^basic /i.test(value)) {
+      const decoded = safeAtob(value.slice(6).trim());
+      if (decoded !== undefined) return { apiKey: decoded, authHeader: "basic" };
+    }
+    if (name === "authorization" && /^bearer /i.test(value))
+      return { apiKey: value.slice(7).trim() };
   }
   return undefined;
+}
+
+function safeAtob(value: string): string | undefined {
+  try {
+    return atob(value);
+  } catch {
+    return undefined;
+  }
 }
 
 const normalizeState = (value: unknown): LlamaSwapModelState =>

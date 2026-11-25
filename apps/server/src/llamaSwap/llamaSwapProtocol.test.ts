@@ -8,7 +8,7 @@ import {
   parseLaunchCommand,
   parseModelList,
   parseRunning,
-  resolveLlamaSwapApiKey,
+  resolveLlamaSwapCredential,
   withListedContext,
 } from "./llamaSwapProtocol.ts";
 
@@ -24,22 +24,36 @@ describe("normalizeLlamaSwapOrigin", () => {
   });
 });
 
-describe("resolveLlamaSwapApiKey", () => {
+describe("resolveLlamaSwapCredential", () => {
   it("prefers LLAMA_SWAP_API_KEY, then the provider's own credential", () => {
     expect(
-      resolveLlamaSwapApiKey({
-        LLAMA_SWAP_API_KEY: " swap ",
-        ANTHROPIC_AUTH_TOKEN: "claude",
-      }),
-    ).toBe("swap");
+      resolveLlamaSwapCredential({ LLAMA_SWAP_API_KEY: " swap ", ANTHROPIC_AUTH_TOKEN: "claude" }),
+    ).toEqual({ apiKey: "swap" });
     expect(
-      resolveLlamaSwapApiKey({ MY_KEY: "codex", ANTHROPIC_API_KEY: "claude" }, ["MY_KEY"]),
-    ).toBe("codex");
-    expect(resolveLlamaSwapApiKey({ ANTHROPIC_AUTH_TOKEN: "t", ANTHROPIC_API_KEY: "k" })).toBe("t");
+      resolveLlamaSwapCredential({ MY_KEY: "codex", ANTHROPIC_API_KEY: "claude" }, ["MY_KEY"]),
+    ).toEqual({ apiKey: "codex" });
+    expect(
+      resolveLlamaSwapCredential({ ANTHROPIC_AUTH_TOKEN: "t", ANTHROPIC_API_KEY: "k" }),
+    ).toEqual({ apiKey: "t" });
+    expect(resolveLlamaSwapCredential({ T3_ENDPOINT_API_KEY: "codex-key" })).toEqual({
+      apiKey: "codex-key",
+    });
+  });
+
+  it("reads a key the api-key and Basic styles put in Claude's custom headers", () => {
+    expect(resolveLlamaSwapCredential({ ANTHROPIC_CUSTOM_HEADERS: "api-key: abc" })).toEqual({
+      apiKey: "abc",
+      authHeader: "api-key",
+    });
+    expect(
+      resolveLlamaSwapCredential({
+        ANTHROPIC_CUSTOM_HEADERS: `authorization: Basic ${btoa("u:p")}`,
+      }),
+    ).toEqual({ apiKey: "u:p", authHeader: "basic" });
   });
 
   it("ignores empty and non-string values", () => {
-    expect(resolveLlamaSwapApiKey({ ANTHROPIC_AUTH_TOKEN: "  ", ANTHROPIC_API_KEY: 3 })).toBe(
+    expect(resolveLlamaSwapCredential({ ANTHROPIC_AUTH_TOKEN: "  ", ANTHROPIC_API_KEY: 3 })).toBe(
       undefined,
     );
   });
