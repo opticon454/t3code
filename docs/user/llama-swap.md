@@ -86,7 +86,7 @@ also set `LLAMA_SWAP_API_KEY`.
 
 ### Context warnings
 
-Claude Code needs about 40,000 tokens for each request before the model can answer. If
+Claude Code's first request is about 16,000 tokens, so T3 Code asks for a window of at least 20,000 tokens per slot. If
 a model's window per slot is below that, or llama-swap does not report it, the switch
 dialog warns you and offers **Use anyway**. Raise the model's context size in llama-swap's
 config to fix it. Other providers have no warning yet because their requirements have

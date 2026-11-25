@@ -84,12 +84,12 @@ describe("contextWarning", () => {
     expect(contextWarning({ driver: claude, contextTokens: 16_384, slots: 1 })).toEqual({
       kind: "tooSmall",
       perSlotTokens: 16_384,
-      floorTokens: 40_000,
+      floorTokens: 20_000,
     });
-    expect(contextWarning({ driver: claude, contextTokens: 65_536, slots: 2 })).toEqual({
+    expect(contextWarning({ driver: claude, contextTokens: 32_768, slots: 2 })).toEqual({
       kind: "tooSmall",
-      perSlotTokens: 32_768,
-      floorTokens: 40_000,
+      perSlotTokens: 16_384,
+      floorTokens: 20_000,
     });
     expect(contextWarning({ driver: claude, contextTokens: 65_536, slots: 1 })).toBeUndefined();
     expect(contextWarning({ driver: claude, contextTokens: undefined, slots: undefined })).toEqual({
