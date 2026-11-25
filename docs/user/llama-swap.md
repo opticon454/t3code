@@ -8,7 +8,36 @@ and shows progress while llama-swap changes models.
 This works with Claude, Codex, OpenCode and Pi. Other providers have no custom endpoint,
 so nothing changes for them.
 
-## Set up an instance
+## Custom model endpoints
+
+**Settings > Providers > Custom model endpoints** keeps a list of model servers, so you
+enter each address and key once. Add as many as you need:
+
+| Field                  | What it does                                                                                          |
+| ---------------------- | ----------------------------------------------------------------------------------------------------- |
+| Id                     | Short and stable. Lower case letters, numbers, `-` and `_`.                                           |
+| Label                  | The name shown in lists.                                                                              |
+| Base URL               | The server's address. A bare host gets `/v1` where a provider needs it.                               |
+| Default context length | The model's whole window, used only when the server cannot report a size.                             |
+| API key                | Stored as a secret, or read from a secret provider. Leave blank on edit to keep the saved key.        |
+| Auth header            | `Authorization: Bearer` (default), `api-key` (Azure OpenAI), `x-api-key`, or Basic. Only one is sent. |
+| API version            | Azure's `api-version` query parameter.                                                                |
+| Default model          | What new threads on a linked instance start with. **Discover models** lists the server's models.      |
+
+Then open a Claude or Codex instance in **Settings > Providers** and choose the endpoint
+under **Endpoint**. T3 Code puts the address, key and header into that instance, and uses the
+same endpoint for the Loaded badges, Unload and swap-out notices. Variables you set on the
+instance itself still win.
+
+Claude takes a bearer token or `x-api-key` directly. The `api-key` and Basic styles go through
+`ANTHROPIC_CUSTOM_HEADERS`, which needs a literal key rather than a secret reference. Codex gets
+a custom provider through launch arguments, with the key in its own environment variable.
+OpenCode and Pi keep their addresses in their own configuration, so they do not use this list.
+
+Not yet verified against a live Azure deployment or a Codex build that rejects the `responses`
+wire format, so treat those two as untested.
+
+## Set up an instance by hand
 
 Point a provider instance at the server's address. The server must be reachable from the
 machine that runs the environment, not from your browser or phone.

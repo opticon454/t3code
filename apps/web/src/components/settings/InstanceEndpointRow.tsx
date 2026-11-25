@@ -10,7 +10,7 @@ import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../
 import { SettingsRow } from "./settingsLayout";
 
 const NONE = "__none__";
-const ENDPOINT_DRIVERS: ReadonlySet<string> = new Set(["claudeAgent", "codex", "opencode", "pi"]);
+const ENDPOINT_DRIVERS: ReadonlySet<string> = new Set(["claudeAgent", "codex"]);
 
 /** Chooses the saved custom model endpoint a provider instance sends its requests to. */
 export function InstanceEndpointRow(props: {

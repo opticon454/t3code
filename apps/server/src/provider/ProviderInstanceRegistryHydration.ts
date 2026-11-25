@@ -91,11 +91,19 @@ export const deriveProviderInstanceConfigMap = (
         ? undefined
         : settings.customModelEndpoints[instance.endpointId];
     if (!endpoint) continue;
+    const origin = URL.parse(endpoint.baseUrl)?.origin;
     merged[instanceId] = {
       ...instance,
-      ...(endpoint.defaultModel === undefined
+      ...(origin === undefined
         ? {}
-        : { endpointDefaultModel: endpoint.defaultModel }),
+        : {
+            resolvedEndpoint: {
+              origin,
+              ...(endpoint.defaultModel === undefined
+                ? {}
+                : { defaultModel: endpoint.defaultModel }),
+            },
+          }),
       environment: [
         ...customEndpointEnvironment(instance.driver, endpoint),
         ...(instance.environment ?? []),

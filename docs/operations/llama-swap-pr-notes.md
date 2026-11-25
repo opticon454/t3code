@@ -31,6 +31,23 @@ Claude, Codex, OpenCode and Pi instances that point at one.
 | `8b10f80fbf` | Mobile badge, Unload, confirm alerts, load and swap-out notices              |
 | `600c8167f7` | `docs/user/llama-swap.md` and links from the four provider pages             |
 
+## Custom model endpoints (follow-up)
+
+- `customModelEndpoints` server setting, modelled on `textGenerators`: label, base URL, default
+  context, API key (secret), auth header (bearer, `api-key`, `x-api-key`, basic), Azure
+  `apiVersion` and a default model. A `customEndpoint.listModels` RPC (settings-write scope)
+  powers Discover models.
+- Provider instances take an optional `endpointId`. `deriveProviderInstanceConfigMap` merges the
+  endpoint's variables in before the instance's own: Claude gets `ANTHROPIC_*`, Codex gets
+  `T3CODE_CODEX_LAUNCH_ARGS` plus `T3_ENDPOINT_API_KEY`. The derived `resolvedEndpoint` key marks
+  the endpoint's default model and fills `auth.endpoint` on the snapshot.
+- The llama-swap calls prefer the instance's saved endpoint (URL, key, header, default context)
+  and fall back to the old snapshot and `LLAMA_SWAP_API_KEY` behaviour.
+- Web: settings list and dialog, Endpoint choice on instance cards. Mobile: a section on the
+  Providers screen. OpenCode and Pi do not use endpoints (their addresses live in their configs).
+- New strings from this follow-up are not yet translated; they fall back to English.
+- Unverified: Azure end to end, Codex with an injected provider, Claude with the `api-key` header.
+
 ## Design notes
 
 - Clients name an instance id, never a URL. The server resolves the endpoint and API key from
