@@ -2284,6 +2284,8 @@
   "8fffd1cf07b7fbc6": "Configuration des raccourcis clavier non valide",
   "9e4394e5b89e57a1": "Restauration de vos fils…",
   "5579a5d039c6962c": "{count, plural, one {Migration de {total} fil depuis la version précédente. Vous pouvez continuer à travailler en attendant.} other {Migration de {total} fils depuis la version précédente. Vous pouvez continuer à travailler en attendant.}}",
+  "f2eb475b15778a77": "{thread} dans {project} a perdu {previous} : llama-swap a chargé {loaded}",
+  "c6196d99000642b4": "Ouvrir le fil",
   "8117d2b1eaef9f82": [
     "Cet environnement est géré par ",
     {
@@ -2635,7 +2637,6 @@
   "a3178769f8308cbc": "Échec du fil",
   "89b5e8f3887812da": "Demande d’invité",
   "62e626804919b294": "Réponse requise",
-  "c6196d99000642b4": "Ouvrir le fil",
   "70bdebaa3d291d3b": "Fil indisponible",
   "a351ebbdcf1a3f7a": "Ce fil se trouve dans un environnement auquel cette app n’est pas connectée.",
   "826cb862b4a11fb3": "{label} :",

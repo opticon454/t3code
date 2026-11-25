@@ -2284,6 +2284,8 @@
   "8fffd1cf07b7fbc6": "Ungültige Tastenkürzel-Konfiguration",
   "9e4394e5b89e57a1": "Deine Threads werden wiederhergestellt…",
   "5579a5d039c6962c": "{count, plural, one {{total} Thread wird aus der vorherigen Version migriert. Du kannst weiterarbeiten, während das läuft.} other {{total} Threads werden aus der vorherigen Version migriert. Du kannst weiterarbeiten, während das läuft.}}",
+  "f2eb475b15778a77": "{thread} in {project} hat {previous} verloren: llama-swap hat {loaded} geladen",
+  "c6196d99000642b4": "Thread öffnen",
   "8117d2b1eaef9f82": [
     "Diese Umgebung wird von ",
     {
@@ -2636,7 +2638,6 @@
   "a3178769f8308cbc": "Thread fehlgeschlagen",
   "89b5e8f3887812da": "Gastanfrage",
   "62e626804919b294": "Eingabe nötig",
-  "c6196d99000642b4": "Thread öffnen",
   "70bdebaa3d291d3b": "Thread nicht verfügbar",
   "a351ebbdcf1a3f7a": "Dieser Thread liegt in einer Umgebung, mit der diese App nicht verbunden ist.",
   "826cb862b4a11fb3": "{label}:",

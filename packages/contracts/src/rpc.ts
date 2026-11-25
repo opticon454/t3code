@@ -50,6 +50,7 @@ import { SecretSourceCheckResult } from "./settingsSecretValue.ts";
 import {
   LlamaSwapError,
   LlamaSwapStatus,
+  LlamaSwapSwapEvent,
   LlamaSwapSubscribeInput,
   LlamaSwapUnloadInput,
 } from "./llamaSwap.ts";
@@ -546,6 +547,7 @@ export const WS_METHODS = {
   providerInstallRemove: "provider.install.remove",
   providerLlamaSwapSubscribe: "provider.llamaSwap.subscribe",
   providerLlamaSwapUnload: "provider.llamaSwap.unload",
+  providerLlamaSwapSwapEvents: "provider.llamaSwap.swapEvents",
 
   vcsPull: "vcs.pull",
   vcsRefreshStatus: "vcs.refreshStatus",
@@ -922,6 +924,13 @@ const WsProviderLlamaSwapSubscribeRpc = Rpc.make(WS_METHODS.providerLlamaSwapSub
   payload: LlamaSwapSubscribeInput,
   success: LlamaSwapStatus,
   error: LlamaSwapRpcError,
+  stream: true,
+});
+
+const WsProviderLlamaSwapSwapEventsRpc = Rpc.make(WS_METHODS.providerLlamaSwapSwapEvents, {
+  payload: Schema.Struct({}),
+  success: Schema.Array(LlamaSwapSwapEvent),
+  error: EnvironmentAuthorizationError,
   stream: true,
 });
 
@@ -2535,6 +2544,7 @@ export const WsRpcGroup = RpcGroup.make(
   WsProviderInstallRemoveRpc,
   WsProviderLlamaSwapSubscribeRpc,
   WsProviderLlamaSwapUnloadRpc,
+  WsProviderLlamaSwapSwapEventsRpc,
   WsServerUpdateServerRpc,
   WsServerGetNpmReleaseRpc,
   WsServerUpdateServerWithProgressRpc,

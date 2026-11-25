@@ -5,10 +5,12 @@ import * as Schedule from "effect/Schedule";
 import * as Stream from "effect/Stream";
 
 import type * as ProviderInstanceRegistry from "../provider/ProviderInstanceRegistry.ts";
-import type { LlamaSwapEndpoint, LlamaSwapService } from "./LlamaSwapService.ts";
+import type { LlamaSwapEndpoint, LlamaSwapService, LlamaSwapStatus } from "./LlamaSwapService.ts";
 import { normalizeLlamaSwapOrigin, resolveLlamaSwapApiKey } from "./llamaSwapProtocol.ts";
+import { sweepSwappedOut, type SweepThread } from "./swapSweep.ts";
 
 const POLL_INTERVAL = "1 second";
+const SWEEP_INTERVAL = "20 seconds";
 
 type Instances = ProviderInstanceRegistry.ProviderInstanceRegistry["Service"];
 
@@ -39,7 +41,14 @@ const resolveInstanceEndpoint = Effect.fn("LlamaSwapRpc.resolveInstanceEndpoint"
   return { origin, ...(apiKey ? { apiKey } : {}) } satisfies LlamaSwapEndpoint;
 });
 
-export const makeLlamaSwapRpc = (instances: Instances, llamaSwap: LlamaSwapService["Service"]) => ({
+export const makeLlamaSwapRpc = (
+  instances: Instances,
+  llamaSwap: LlamaSwapService["Service"],
+  /** Live threads with a provider session, which a swap-out could interrupt. */
+  readThreads: Effect.Effect<
+    ReadonlyArray<SweepThread & { readonly instanceId: ProviderInstanceId }>
+  >,
+) => ({
   /** Re-reads once a second and emits only when something changed. */
   subscribe: (input: { readonly instanceId: ProviderInstanceId }) =>
     Stream.unwrap(
@@ -61,6 +70,39 @@ export const makeLlamaSwapRpc = (instances: Instances, llamaSwap: LlamaSwapServi
         ),
       ),
     ),
+  /**
+   * Every 20 seconds, while a client listens, reports threads whose model another client
+   * displaced. Nothing is read when no instance has a custom endpoint.
+   */
+  swapEvents: Stream.suspend(() => {
+    const notified = new Set<string>();
+    const sweep = Effect.gen(function* () {
+      const all = yield* instances.listInstances;
+      const endpoints = new Map<ProviderInstanceId, LlamaSwapEndpoint>();
+      for (const instance of all) {
+        const endpoint = yield* resolveInstanceEndpoint(instances, instance.instanceId).pipe(
+          Effect.option,
+        );
+        if (Option.isSome(endpoint)) endpoints.set(instance.instanceId, endpoint.value);
+      }
+      if (endpoints.size === 0) return [];
+      const statusByOrigin = new Map<string, LlamaSwapStatus>();
+      const statusByInstance = new Map<string, LlamaSwapStatus>();
+      for (const [instanceId, endpoint] of endpoints) {
+        let status = statusByOrigin.get(endpoint.origin);
+        if (!status) {
+          status = yield* llamaSwap.status(endpoint);
+          statusByOrigin.set(endpoint.origin, status);
+        }
+        statusByInstance.set(instanceId, status);
+      }
+      const threads = (yield* readThreads).filter((thread) => endpoints.has(thread.instanceId));
+      return sweepSwappedOut({ threads, statusByInstance, notified });
+    });
+    return Stream.fromEffectSchedule(sweep, Schedule.spaced(SWEEP_INTERVAL)).pipe(
+      Stream.filter((events) => events.length > 0),
+    );
+  }),
   unload: Effect.fn("LlamaSwapRpc.unload")(function* (input: {
     readonly instanceId: ProviderInstanceId;
     readonly model: string;

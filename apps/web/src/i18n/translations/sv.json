@@ -2284,6 +2284,8 @@
   "8fffd1cf07b7fbc6": "Ogiltig konfiguration av kortkommandon",
   "9e4394e5b89e57a1": "Återställer dina trådar…",
   "5579a5d039c6962c": "{count, plural, one {Migrerar {total} tråd från den tidigare versionen. Du kan fortsätta arbeta medan det blir klart.} other {Migrerar {total} trådar från den tidigare versionen. Du kan fortsätta arbeta medan det blir klart.}}",
+  "f2eb475b15778a77": "{thread} i {project} förlorade {previous}: llama-swap laddade {loaded}",
+  "c6196d99000642b4": "Öppna tråd",
   "8117d2b1eaef9f82": [
     "Den här miljön hanteras av ",
     {
@@ -2635,7 +2637,6 @@
   "a3178769f8308cbc": "Tråden misslyckades",
   "89b5e8f3887812da": "Gästbegäran",
   "62e626804919b294": "Input behövs",
-  "c6196d99000642b4": "Öppna tråd",
   "70bdebaa3d291d3b": "Tråden är inte tillgänglig",
   "a351ebbdcf1a3f7a": "Den här tråden finns i en miljö som den här appen inte är ansluten till.",
   "826cb862b4a11fb3": "{label}:",

@@ -1585,7 +1585,27 @@ export const layerWsRpc = (
       const providerMaintenanceRunner = yield* ProviderMaintenanceRunner.ProviderMaintenanceRunner;
       const providerAuth = yield* ProviderAuthService.ProviderAuthService;
       const providerInstallation = yield* ProviderInstallation.ProviderInstallation;
-      const llamaSwapRpc = makeLlamaSwapRpc(providerInstances, yield* LlamaSwap.LlamaSwapService);
+      const llamaSwapRpc = makeLlamaSwapRpc(
+        providerInstances,
+        yield* LlamaSwap.LlamaSwapService,
+        threadManagement.getShellSnapshot({ location: "active" }).pipe(
+          Effect.map((snapshot) =>
+            snapshot.threads.flatMap((thread) =>
+              thread.activeProviderThreadId === null
+                ? []
+                : [
+                    {
+                      id: thread.id,
+                      projectId: thread.projectId,
+                      instanceId: thread.modelSelection.instanceId,
+                      model: thread.modelSelection.model,
+                    },
+                  ],
+            ),
+          ),
+          Effect.orElseSucceed(() => []),
+        ),
+      );
       const serverSelfUpdate = yield* ServerSelfUpdate.ServerSelfUpdate;
       const npmRelease = yield* NpmRelease.NpmRelease;
       const config = yield* ServerConfig.ServerConfig;
@@ -2790,6 +2810,7 @@ export const layerWsRpc = (
         [WS_METHODS.providerInstallSubscribe]: (input) => providerInstallation.subscribe(input),
         [WS_METHODS.providerInstallRemove]: (input) => providerInstallation.remove(input),
         [WS_METHODS.providerLlamaSwapSubscribe]: (input) => llamaSwapRpc.subscribe(input),
+        [WS_METHODS.providerLlamaSwapSwapEvents]: () => llamaSwapRpc.swapEvents,
         [WS_METHODS.providerLlamaSwapUnload]: (input) => llamaSwapRpc.unload(input),
         [WS_METHODS.serverUpdateServer]: (input) => serverSelfUpdate.update(input),
         [WS_METHODS.serverGetNpmRelease]: (input) => npmRelease.get(input),

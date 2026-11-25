@@ -2284,6 +2284,8 @@
   "8fffd1cf07b7fbc6": "Configuração de atalhos de teclado inválida",
   "9e4394e5b89e57a1": "Restaurando suas threads…",
   "5579a5d039c6962c": "{count, plural, one {Migrando {total} thread da versão anterior. Você pode continuar trabalhando enquanto isso termina.} other {Migrando {total} threads da versão anterior. Você pode continuar trabalhando enquanto isso termina.}}",
+  "f2eb475b15778a77": "{thread} em {project} perdeu {previous}: o llama-swap carregou {loaded}",
+  "c6196d99000642b4": "Abrir thread",
   "8117d2b1eaef9f82": [
     "Este ambiente é gerenciado por ",
     {
@@ -2635,7 +2637,6 @@
   "a3178769f8308cbc": "A thread falhou",
   "89b5e8f3887812da": "Pedido de convidado",
   "62e626804919b294": "Resposta necessária",
-  "c6196d99000642b4": "Abrir thread",
   "70bdebaa3d291d3b": "Thread indisponível",
   "a351ebbdcf1a3f7a": "Esta thread está em um ambiente ao qual este app não está conectado.",
   "826cb862b4a11fb3": "{label}:",

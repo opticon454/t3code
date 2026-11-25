@@ -2284,6 +2284,8 @@
   "8fffd1cf07b7fbc6": "Invalid keybindings configuration",
   "9e4394e5b89e57a1": "Restoring your threads…",
   "5579a5d039c6962c": "{count, plural, one {Migrating {total} thread from the previous version. You can keep working while this finishes.} other {Migrating {total} threads from the previous version. You can keep working while this finishes.}}",
+  "f2eb475b15778a77": "{thread} in {project} lost {previous}: llama-swap loaded {loaded}",
+  "c6196d99000642b4": "Open thread",
   "8117d2b1eaef9f82": [
     "This environment is managed by ",
     {
@@ -2635,7 +2637,6 @@
   "a3178769f8308cbc": "Thread failed",
   "89b5e8f3887812da": "Guest request",
   "62e626804919b294": "Input needed",
-  "c6196d99000642b4": "Open thread",
   "70bdebaa3d291d3b": "Thread unavailable",
   "a351ebbdcf1a3f7a": "This thread is on an environment this app is not connected to.",
   "826cb862b4a11fb3": "{label}:",

@@ -1625,6 +1625,11 @@ export function createServerEnvironmentAtoms<R, E>(
       tag: WS_METHODS.providerLlamaSwapSubscribe,
       idleTtlMs: 0,
     }),
+    llamaSwapSwapEvents: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
+      label: "environment-data:provider:llama-swap-swap-events",
+      tag: WS_METHODS.providerLlamaSwapSwapEvents,
+      idleTtlMs: 0,
+    }),
     unloadLlamaSwapModel: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:provider:llama-swap-unload",
       tag: WS_METHODS.providerLlamaSwapUnload,

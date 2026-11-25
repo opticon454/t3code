@@ -59,6 +59,7 @@ const RPC_AGGREGATES = {
   [WS_METHODS.providerInstallSubscribe]: "provider",
   [WS_METHODS.providerLlamaSwapSubscribe]: "provider",
   [WS_METHODS.providerLlamaSwapUnload]: "provider",
+  [WS_METHODS.providerLlamaSwapSwapEvents]: "provider",
   [WS_METHODS.providerInstallRemove]: "provider",
   [WS_METHODS.serverUpdateServer]: "server",
   [WS_METHODS.serverUpdateServerWithProgress]: "server",

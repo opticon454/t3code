@@ -1,6 +1,7 @@
 import { ProviderInstanceId } from "@t3tools/contracts";
 import { it as effectIt } from "@effect/vitest";
 import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 import * as Stream from "effect/Stream";
 import { expect } from "vite-plus/test";
 
@@ -45,6 +46,7 @@ effectIt.effect("unloads on the instance's own endpoint with its configured key"
     const rpc = makeLlamaSwapRpc(
       instances("http://10.0.0.5:8080/v1", [["ANTHROPIC_AUTH_TOKEN", "sk-1"]]),
       swap(calls),
+      Effect.succeed([]),
     );
     yield* rpc.unload({ instanceId: id, model: "qwen" });
     expect(calls).toEqual([["unload", { origin: "http://10.0.0.5:8080", apiKey: "sk-1" }, "qwen"]]);
@@ -57,18 +59,21 @@ effectIt.effect(
     Effect.gen(function* () {
       const calls: Array<unknown> = [];
       const unknown = yield* Effect.flip(
-        makeLlamaSwapRpc(instances("http://h"), swap(calls)).unload({
+        makeLlamaSwapRpc(instances("http://h"), swap(calls), Effect.succeed([])).unload({
           instanceId: ProviderInstanceId.make("other"),
           model: "m",
         }),
       );
       expect(unknown.message).toBe("Unknown provider instance.");
       const none = yield* Effect.flip(
-        makeLlamaSwapRpc(instances(undefined), swap(calls)).unload({ instanceId: id, model: "m" }),
+        makeLlamaSwapRpc(instances(undefined), swap(calls), Effect.succeed([])).unload({
+          instanceId: id,
+          model: "m",
+        }),
       );
       expect(none.message).toBe("This provider instance does not use a custom endpoint.");
       const rejected = yield* Effect.flip(
-        makeLlamaSwapRpc(instances("http://h"), swap(calls)).unload({
+        makeLlamaSwapRpc(instances("http://h"), swap(calls), Effect.succeed([])).unload({
           instanceId: id,
           model: "bad",
         }),
@@ -81,9 +86,25 @@ effectIt.effect(
 effectIt.effect("subscribe emits the status once while it is unchanged", () =>
   Effect.gen(function* () {
     const calls: Array<unknown> = [];
-    const first = yield* makeLlamaSwapRpc(instances("http://h:1"), swap(calls))
+    const first = yield* makeLlamaSwapRpc(instances("http://h:1"), swap(calls), Effect.succeed([]))
       .subscribe({ instanceId: id })
       .pipe(Stream.take(1), Stream.runCollect);
     expect(first).toEqual([status]);
+  }),
+);
+
+effectIt.live("swapEvents stays silent when no instance has a custom endpoint", () =>
+  Effect.gen(function* () {
+    const calls: Array<unknown> = [];
+    const events = yield* makeLlamaSwapRpc(
+      {
+        getInstance: () => Effect.undefined,
+        listInstances: Effect.succeed([{ instanceId: id }]),
+      } as never,
+      swap(calls),
+      Effect.succeed([]),
+    ).swapEvents.pipe(Stream.take(1), Stream.runCollect, Effect.timeoutOption("50 millis"));
+    expect(events).toEqual(Option.none());
+    expect(calls).toEqual([]);
   }),
 );

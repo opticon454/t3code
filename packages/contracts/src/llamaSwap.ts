@@ -1,6 +1,6 @@
 import * as Schema from "effect/Schema";
 
-import { TrimmedNonEmptyString } from "./baseSchemas.ts";
+import { ProjectId, ThreadId, TrimmedNonEmptyString } from "./baseSchemas.ts";
 import { ProviderInstanceId } from "./providerInstance.ts";
 
 /** A llama-swap server is addressed by the provider instance that uses it, never by URL. */
@@ -49,3 +49,12 @@ export class LlamaSwapError extends Schema.TaggedError<LlamaSwapError>()("LlamaS
     return this.detail;
   }
 }
+
+/** A thread's model was replaced on its llama-swap server by another client's request. */
+export const LlamaSwapSwapEvent = Schema.Struct({
+  threadId: ThreadId,
+  projectId: ProjectId,
+  previousModel: TrimmedNonEmptyString,
+  loadedModel: TrimmedNonEmptyString,
+});
+export type LlamaSwapSwapEvent = typeof LlamaSwapSwapEvent.Type;

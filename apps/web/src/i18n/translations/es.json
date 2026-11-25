@@ -2284,6 +2284,8 @@
   "8fffd1cf07b7fbc6": "Configuración de atajos de teclado no válida",
   "9e4394e5b89e57a1": "Restaurando tus hilos…",
   "5579a5d039c6962c": "{count, plural, one {Migrando {total} hilo de la versión anterior. Puedes seguir trabajando mientras termina.} other {Migrando {total} hilos de la versión anterior. Puedes seguir trabajando mientras termina.}}",
+  "f2eb475b15778a77": "{thread} en {project} perdió {previous}: llama-swap cargó {loaded}",
+  "c6196d99000642b4": "Abrir hilo",
   "8117d2b1eaef9f82": [
     "Este entorno lo gestiona ",
     {
@@ -2635,7 +2637,6 @@
   "a3178769f8308cbc": "El hilo falló",
   "89b5e8f3887812da": "Solicitud de invitado",
   "62e626804919b294": "Se necesita una respuesta",
-  "c6196d99000642b4": "Abrir hilo",
   "70bdebaa3d291d3b": "Hilo no disponible",
   "a351ebbdcf1a3f7a": "Este hilo está en un entorno al que esta app no está conectada.",
   "826cb862b4a11fb3": "{label}:",
