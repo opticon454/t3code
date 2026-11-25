@@ -45,6 +45,8 @@ export interface ProviderInstance {
   readonly displayName: string | undefined;
   readonly accentColor?: string | undefined;
   readonly enabled: boolean;
+  /** The resolved instance environment, set by the registry. Server-side only; never sent to clients. */
+  readonly environment?: ResolvedProviderInstanceEnvironment;
   readonly snapshot: ManagedServerProvider;
   readonly snapshotForCwd?: (
     cwd: string,

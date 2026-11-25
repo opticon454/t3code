@@ -47,6 +47,12 @@ import * as RpcGroup from "effect/rpc/RpcGroup";
 import * as RpcMiddleware from "effect/rpc/RpcMiddleware";
 import { IsoDateTime, NonNegativeInt, TrimmedNonEmptyString } from "./baseSchemas.ts";
 import { SecretSourceCheckResult } from "./settingsSecretValue.ts";
+import {
+  LlamaSwapError,
+  LlamaSwapStatus,
+  LlamaSwapSubscribeInput,
+  LlamaSwapUnloadInput,
+} from "./llamaSwap.ts";
 import { SecretReference } from "./secretReference.ts";
 import {
   ProviderAuthCancelInput,
@@ -538,6 +544,8 @@ export const WS_METHODS = {
   providerInstallCancel: "provider.install.cancel",
   providerInstallSubscribe: "provider.install.subscribe",
   providerInstallRemove: "provider.install.remove",
+  providerLlamaSwapSubscribe: "provider.llamaSwap.subscribe",
+  providerLlamaSwapUnload: "provider.llamaSwap.unload",
 
   vcsPull: "vcs.pull",
   vcsRefreshStatus: "vcs.refreshStatus",
@@ -906,6 +914,21 @@ const WsProviderInstallRemoveRpc = Rpc.make(WS_METHODS.providerInstallRemove, {
   payload: ProviderSetupInput,
   success: ProviderInstallState,
   error: ProviderSetupRpcError,
+});
+
+const LlamaSwapRpcError = Schema.Union([LlamaSwapError, EnvironmentAuthorizationError]);
+
+const WsProviderLlamaSwapSubscribeRpc = Rpc.make(WS_METHODS.providerLlamaSwapSubscribe, {
+  payload: LlamaSwapSubscribeInput,
+  success: LlamaSwapStatus,
+  error: LlamaSwapRpcError,
+  stream: true,
+});
+
+const WsProviderLlamaSwapUnloadRpc = Rpc.make(WS_METHODS.providerLlamaSwapUnload, {
+  payload: LlamaSwapUnloadInput,
+  success: Schema.Void,
+  error: LlamaSwapRpcError,
 });
 
 const WsServerGetNpmReleaseRpc = Rpc.make(WS_METHODS.serverGetNpmRelease, {
@@ -2510,6 +2533,8 @@ export const WsRpcGroup = RpcGroup.make(
   WsProviderInstallCancelRpc,
   WsProviderInstallSubscribeRpc,
   WsProviderInstallRemoveRpc,
+  WsProviderLlamaSwapSubscribeRpc,
+  WsProviderLlamaSwapUnloadRpc,
   WsServerUpdateServerRpc,
   WsServerGetNpmReleaseRpc,
   WsServerUpdateServerWithProgressRpc,

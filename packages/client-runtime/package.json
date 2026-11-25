@@ -371,6 +371,10 @@
       "types": "./src/state/usageProgress.ts",
       "default": "./src/state/usageProgress.ts"
     },
+    "./state/llamaSwap": {
+      "types": "./src/state/llamaSwap.ts",
+      "default": "./src/state/llamaSwap.ts"
+    },
     "./state/server": {
       "types": "./src/state/server.ts",
       "default": "./src/state/server.ts"

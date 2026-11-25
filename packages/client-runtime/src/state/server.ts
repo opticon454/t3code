@@ -1620,6 +1620,15 @@ export function createServerEnvironmentAtoms<R, E>(
       label: "environment-data:provider:install-remove",
       tag: WS_METHODS.providerInstallRemove,
     }),
+    llamaSwapStatus: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
+      label: "environment-data:provider:llama-swap-status",
+      tag: WS_METHODS.providerLlamaSwapSubscribe,
+      idleTtlMs: 0,
+    }),
+    unloadLlamaSwapModel: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:provider:llama-swap-unload",
+      tag: WS_METHODS.providerLlamaSwapUnload,
+    }),
     traceDiagnostics: createEnvironmentRpcQueryAtomFamily(runtime, {
       label: "environment-data:server:trace-diagnostics",
       tag: WS_METHODS.serverGetTraceDiagnostics,
