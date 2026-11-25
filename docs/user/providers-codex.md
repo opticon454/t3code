@@ -176,3 +176,7 @@ In an existing Codex thread, send `/feedback` with an optional description, for
 example `/feedback The agent stopped before finishing the tests`. This uploads
 the conversation and Codex logs to OpenAI. The returned thread ID can be shared
 with OpenAI support.
+
+## llama-swap
+
+T3 Code can show which model a [llama-swap](./llama-swap.md) server has loaded, warn before a switch unloads it, and show loading progress. See [llama-swap](./llama-swap.md).

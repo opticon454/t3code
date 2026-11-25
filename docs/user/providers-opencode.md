@@ -91,3 +91,7 @@ opens there.
 
 Existing threads keep their selected model and options even when it disappears
 from the catalog. If OpenCode rejects that model, select an available one and retry.
+
+## llama-swap
+
+T3 Code can show which model a [llama-swap](./llama-swap.md) server has loaded, warn before a switch unloads it, and show loading progress. See [llama-swap](./llama-swap.md).
