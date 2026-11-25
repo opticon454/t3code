@@ -174,3 +174,7 @@ config directory and put the router's endpoint and credential variables in that
 instance's **Environment variables**. The router must run where the environment
 can reach it. Follow the [Claude Code Router instructions](https://github.com/musistudio/claude-code-router)
 for its installation and routing configuration.
+
+## llama-swap
+
+T3 Code can show which model a [llama-swap](./llama-swap.md) server has loaded, warn before a switch unloads it, and show loading progress. See [llama-swap](./llama-swap.md).

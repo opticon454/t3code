@@ -82,10 +82,27 @@ const runtimeEqual = (a: ProviderInstanceConfig, b: ProviderInstanceConfig): boo
 
 // Drivers stamp the presentation they were created with into every snapshot, so a renamed
 // instance kept live restamps what it reports.
-const withLivePresentation = (instance: ProviderInstance, created: ProviderInstanceConfig) => {
+const withLivePresentation = (
+  instance: ProviderInstance,
+  created: ProviderInstanceConfig,
+  environment: ResolvedProviderInstanceEnvironment,
+) => {
   let current = created;
   const restamp = <S extends ServerProvider>(snapshot: S): S => {
     const next: { -readonly [K in keyof S]: S[K] } = { ...snapshot };
+    // A saved endpoint is this instance's endpoint, and its default model leads new threads.
+    const resolved = created.resolvedEndpoint;
+    if (resolved !== undefined) {
+      if (next.auth.endpoint === undefined) {
+        next.auth = { ...next.auth, endpoint: resolved.origin };
+      }
+      const preferred = resolved.defaultModel;
+      if (preferred !== undefined && snapshot.models.some((model) => model.slug === preferred)) {
+        next.models = snapshot.models.map(({ isDefault: _was, ...model }) =>
+          model.slug === preferred ? { ...model, isDefault: true } : model,
+        ) as S["models"];
+      }
+    }
     for (const key of ["displayName", "accentColor"] as const) {
       const value = current[key];
       if (value === created[key]) continue;
@@ -97,6 +114,7 @@ const withLivePresentation = (instance: ProviderInstance, created: ProviderInsta
   const { snapshot, snapshotForCwd } = instance;
   const wrapped: ProviderInstance = {
     ...instance,
+    environment,
     get displayName() {
       return current.displayName;
     },
@@ -374,6 +392,7 @@ const buildEntry = Effect.fn("ProviderInstanceRegistry.buildEntry")(function* <R
       displayName: entry.displayName,
       accentColor: entry.accentColor,
       environment: secrets.environment,
+      endpointOrigin: entry.resolvedEndpoint?.origin,
       enabled,
       config:
         secrets.config.length === 0
@@ -400,7 +419,11 @@ const buildEntry = Effect.fn("ProviderInstanceRegistry.buildEntry")(function* <R
     };
   }
 
-  const { instance, setPresentation } = withLivePresentation(createResult.success, entry);
+  const { instance, setPresentation } = withLivePresentation(
+    createResult.success,
+    entry,
+    secrets.environment,
+  );
   return {
     kind: "live" as const,
     live: { instance, scope: childScope, entry, secrets, setPresentation },

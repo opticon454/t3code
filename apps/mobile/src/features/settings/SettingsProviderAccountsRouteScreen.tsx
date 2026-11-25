@@ -36,6 +36,7 @@ import { useSettingsEnvironmentMenu } from "./components/SettingsEnvironmentFilt
 import { SettingsScreen } from "./components/SettingsScreen";
 import { SettingsSection } from "./components/SettingsSection";
 import { AddClaudeAccount, ClaudeAccount } from "./ClaudeAccounts";
+import { CustomModelEndpoints } from "./CustomModelEndpoints";
 import { CLAUDE_DRIVER } from "./claude-accounts";
 import { useSettingsEnvironmentFilter, type SettingsTarget } from "./settings-environment-filter";
 
@@ -122,6 +123,10 @@ function EnvironmentProviders({
         <ClaudeAccount key={provider.instanceId} environment={environment} provider={provider} />
       ))}
       {canAddClaude ? <AddClaudeAccount environment={environment} /> : null}
+      <Text textRole="footnote" className="px-4 pt-4 text-foreground-muted">
+        <T>Custom model endpoints</T>
+      </Text>
+      <CustomModelEndpoints environment={environment} />
     </>
   );
 }

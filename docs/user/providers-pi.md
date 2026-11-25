@@ -92,3 +92,7 @@ threads.
 - To see context usage on web and desktop, turn on **Context window** in **Settings → Appearance →
   Thread details**. It appears once Pi reports usage for the thread. Some model providers only
   report usage when a response completes, so it can wait for the first reply.
+
+## llama-swap
+
+T3 Code can show which model a [llama-swap](./llama-swap.md) server has loaded, warn before a switch unloads it, and show loading progress. See [llama-swap](./llama-swap.md).

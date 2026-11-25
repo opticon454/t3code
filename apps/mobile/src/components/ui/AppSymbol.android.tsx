@@ -108,6 +108,7 @@ import IconPlayerPause from "@tabler/icons-react-native/IconPlayerPause";
 import IconPlayerPlay from "@tabler/icons-react-native/IconPlayerPlay";
 import IconPlayerStopFilled from "@tabler/icons-react-native/IconPlayerStopFilled";
 import IconPlus from "@tabler/icons-react-native/IconPlus";
+import IconPower from "@tabler/icons-react-native/IconPower";
 import IconQrcode from "@tabler/icons-react-native/IconQrcode";
 import IconRefresh from "@tabler/icons-react-native/IconRefresh";
 import IconRobot from "@tabler/icons-react-native/IconRobot";
@@ -255,6 +256,7 @@ const ANDROID_ICON_BY_SF_SYMBOL = {
   play: IconPlayerPlay,
   pause: IconPlayerPause,
   plus: IconPlus,
+  power: IconPower,
   minus: IconMinus,
   "slash.circle": IconBan,
   "qrcode.viewfinder": IconQrcode,

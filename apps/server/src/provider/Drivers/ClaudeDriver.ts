@@ -12,6 +12,7 @@ import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import { HttpClient } from "effect/http";
+import { withLlamaSwapModels } from "../../llamaSwap/withLlamaSwapModels.ts";
 import { ChildProcessSpawner } from "effect/process";
 
 import { makeClaudeTextGeneration } from "../../textGeneration/ClaudeTextGeneration.ts";
@@ -105,6 +106,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeSettings, ClaudeDriverEnv, Path.
     displayName,
     accentColor,
     environment,
+    endpointOrigin,
     enabled,
     config,
   }) {
@@ -291,6 +293,10 @@ export const ClaudeDriver: ProviderDriver<ClaudeSettings, ClaudeDriverEnv, Path.
                   Effect.provideService(Path.Path, path),
                 ),
             ),
+          ),
+          // Claude Code's own gateway discovery keeps only ids containing "claude".
+          Effect.flatMap((provider) =>
+            withLlamaSwapModels(provider, httpClient, processEnv, endpointOrigin),
           ),
           Effect.tap((provider) =>
             provider.auth.status === "unauthenticated"

@@ -23,6 +23,10 @@ export const CLIENT_GUARDED_RPC_SCOPES = {
   // An MCP sign-in stores a credential for the agent, as an account sign-in does.
   [WS_METHODS.providerMcpSignInStart]: AuthProvidersManageScope,
   [WS_METHODS.providerMcpSignInComplete]: AuthProvidersManageScope,
+  // Unloading stops a model other threads may be using.
+  [WS_METHODS.providerLlamaSwapUnload]: AuthProvidersManageScope,
+  // Listing models spends the endpoint's stored key.
+  [WS_METHODS.customEndpointListModels]: AuthSettingsWriteScope,
   [WS_METHODS.previewClose]: AuthPreviewOperateScope,
   // Stopping a server signals its processes, as closing a terminal does.
   [WS_METHODS.previewStopLocalServer]: AuthTerminalOperateScope,

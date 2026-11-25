@@ -1,7 +1,7 @@
 import { type ProviderDriverKind, type ProviderInstanceId } from "@t3tools/contracts";
 import { T, useGT } from "gt-react";
 import { memo } from "react";
-import { CheckIcon, StarIcon } from "lucide-react";
+import { CheckIcon, PowerOffIcon, StarIcon } from "lucide-react";
 import { getDisplayModelName } from "./providerIconUtils";
 import { ComboboxItem } from "../ui/combobox";
 import { Button } from "../ui/button";
@@ -11,6 +11,9 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { cn } from "~/lib/utils";
 import { modelPickerModelKey } from "./modelPickerKeys";
 import { ProviderInstanceIcon } from "./ProviderInstanceIcon";
+
+const formatContextSize = (tokens: number): string =>
+  tokens >= 1000 ? `${Math.round(tokens / 1000)}K` : String(tokens);
 
 export const ModelListRow = memo(function ModelListRow(props: {
   index: number;
@@ -31,6 +34,12 @@ export const ModelListRow = memo(function ModelListRow(props: {
   showInstanceBadge: boolean;
   showNewBadge?: boolean;
   unavailable?: boolean;
+  /** llama-swap's state for this model, when its server is llama-swap and has it loaded. */
+  loadState?: "ready" | "starting" | "stopping" | undefined;
+  /** Context window per slot, in tokens, when llama-swap reports it. */
+  contextTokens?: number | undefined;
+  /** Set when the viewer may unload this loaded model. */
+  onUnload?: (() => void) | undefined;
   jumpLabel?: string | null;
   disabledReason?: string | null;
   onToggleFavorite: (instanceId: ProviderInstanceId, slug: string) => void;
@@ -95,6 +104,15 @@ export const ModelListRow = memo(function ModelListRow(props: {
             {gt("New", { $context: "badge on a newly added model" })}
           </span>
         ) : null}
+        {props.loadState ? (
+          <Badge variant={props.loadState === "ready" ? "success" : "warning"} size="sm">
+            {props.loadState === "ready"
+              ? gt("Loaded", { $context: "badge on the model a llama-swap server has loaded" })
+              : props.loadState === "starting"
+                ? gt("Loading", { $context: "badge on a model llama-swap is loading" })
+                : gt("Unloading", { $context: "badge on a model llama-swap is unloading" })}
+          </Badge>
+        ) : null}
         {props.unavailable ? (
           <Badge variant="outline" size="sm">
             <T context="badge on a model that cannot be selected">Unavailable</T>
@@ -103,6 +121,36 @@ export const ModelListRow = memo(function ModelListRow(props: {
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
+        {props.contextTokens !== undefined ? (
+          <span className="text-xs text-muted-foreground/70">
+            {gt("{size} ctx", { size: formatContextSize(props.contextTokens) })}
+          </span>
+        ) : null}
+        {props.onUnload && props.loadState === "ready" ? (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  size="icon-xs"
+                  variant="ghost-muted"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    props.onUnload?.();
+                  }}
+                  onKeyDown={(event) => {
+                    event.stopPropagation();
+                  }}
+                  aria-label={gt("Unload model")}
+                >
+                  <PowerOffIcon className="size-3.5 sm:size-3" />
+                </Button>
+              }
+            />
+            <TooltipPopup side="top" align="center">
+              {gt("Unload model")}
+            </TooltipPopup>
+          </Tooltip>
+        ) : null}
         <Tooltip>
           <TooltipTrigger
             render={

@@ -22,6 +22,7 @@ import {
   TrimmedNonEmptyString,
   TrimmedString,
 } from "./baseSchemas.ts";
+import { CustomModelEndpointId } from "./customModelEndpointId.ts";
 import { UsageLimitSourceId } from "./usageLimitSourceId.ts";
 import { UsageModelFilter } from "./usage.ts";
 import { SecretProviderId, SecretProviderSlug } from "./secretReference.ts";
@@ -991,6 +992,32 @@ export const TextGeneratorConfig = Schema.Struct({
 });
 export type TextGeneratorConfig = typeof TextGeneratorConfig.Type;
 
+/** How an endpoint expects its key. Only one header is ever sent: two made llama-swap hang. */
+export const CustomModelEndpointAuthHeader = Schema.Literals([
+  "authorization-bearer",
+  "api-key",
+  "x-api-key",
+  "basic",
+]);
+export type CustomModelEndpointAuthHeader = typeof CustomModelEndpointAuthHeader.Type;
+
+/** A model server (llama-swap, Azure, a gateway) that provider instances can be pointed at. */
+export const CustomModelEndpointConfig = Schema.Struct({
+  label: Schema.optional(TrimmedNonEmptyString),
+  baseUrl: TextGeneratorBaseUrl,
+  /** The model's whole window, for models whose size the server cannot report. */
+  contextTokens: Schema.optional(Schema.Int.check(Schema.isGreaterThan(0))),
+  apiKey: SettingsSecretValue.pipe(Schema.withDecodingDefault(Effect.succeed("")), secretSetting),
+  authHeader: CustomModelEndpointAuthHeader.pipe(
+    Schema.withDecodingDefault(Effect.succeed("authorization-bearer" as const)),
+  ),
+  /** Azure OpenAI's `api-version` query parameter. */
+  apiVersion: Schema.optional(TrimmedNonEmptyString),
+  /** The model a new thread on an instance using this endpoint starts with. */
+  defaultModel: Schema.optional(TrimmedNonEmptyString),
+});
+export type CustomModelEndpointConfig = typeof CustomModelEndpointConfig.Type;
+
 export const TextGeneratorModel = Schema.Struct({
   id: TrimmedNonEmptyString,
   name: TrimmedNonEmptyString,
@@ -1623,6 +1650,9 @@ export const ServerSettings = Schema.Struct({
   textGenerators: Schema.Record(ProviderInstanceId, TextGeneratorConfig).pipe(
     Schema.withDecodingDefault(Effect.succeed({})),
   ),
+  customModelEndpoints: Schema.Record(CustomModelEndpointId, CustomModelEndpointConfig).pipe(
+    Schema.withDecodingDefault(Effect.succeed({})),
+  ),
   secretProviders: Schema.Record(SecretProviderId, SecretProviderConfig).pipe(
     Schema.withDecodingDefault(Effect.succeed({})),
   ),
@@ -2019,6 +2049,10 @@ export const ServerSettingsPatch = Schema.Struct({
   textGenerators: Schema.optionalKey(
     Schema.Record(ProviderInstanceId, Schema.NullOr(TextGeneratorConfig)),
   ),
+  // Merge per entry like textGenerators; null removes an entry.
+  customModelEndpoints: Schema.optionalKey(
+    Schema.Record(CustomModelEndpointId, Schema.NullOr(CustomModelEndpointConfig)),
+  ),
   secretProviders: Schema.optionalKey(
     Schema.Record(SecretProviderId, Schema.NullOr(SecretProviderConfigWrite)),
   ),
@@ -2066,6 +2100,7 @@ export function requiredScopesForServerSettingsPatch(
       key === "providerInstances" ||
       key === "usageLimitSources" ||
       key === "textGenerators" ||
+      key === "customModelEndpoints" ||
       key === "secretProviders"
     ) {
       changesProviders = true;

@@ -17,6 +17,12 @@ export type ModelRowProps = {
   readonly hiddenUpdatePending?: boolean;
   readonly isFirst: boolean;
   readonly isLast: boolean;
+  /** llama-swap's view of this model, when its server is llama-swap. */
+  readonly llamaSwap?: {
+    readonly state?: "ready" | "starting" | "stopping";
+    readonly contextTokens?: number;
+    readonly onUnload?: () => void;
+  };
 };
 
 export type ChoiceRowProps = {
@@ -91,12 +97,35 @@ export function ModelRowContent(
                 {gt("Hidden", { $context: "model is hidden from the picker" })}
               </Text>
             ) : null}
+            {props.llamaSwap?.state ? (
+              <View className="rounded-md bg-subtle-strong px-1.5 py-0.5">
+                <Text className="text-3xs font-t3-bold text-foreground-muted">
+                  {props.llamaSwap.state === "ready"
+                    ? gt("Loaded", {
+                        $context: "badge on the model a llama-swap server has loaded",
+                      })
+                    : props.llamaSwap.state === "starting"
+                      ? gt("Loading", { $context: "badge on a model llama-swap is loading" })
+                      : gt("Unloading", { $context: "badge on a model llama-swap is unloading" })}
+                </Text>
+              </View>
+            ) : null}
             {props.option.isUnavailable ? (
               <Text className="text-xs text-foreground">
                 {gt("Unavailable", { $context: "model cannot be used" })}
               </Text>
             ) : null}
           </View>
+          {props.llamaSwap?.contextTokens !== undefined ? (
+            <Text className="text-xs text-foreground-muted">
+              {gt("{size} ctx", {
+                size:
+                  props.llamaSwap.contextTokens >= 1000
+                    ? `${Math.round(props.llamaSwap.contextTokens / 1000)}K`
+                    : String(props.llamaSwap.contextTokens),
+              })}
+            </Text>
+          ) : null}
           {props.option.subtitle ? (
             <Text
               className="text-xs text-foreground-muted"
@@ -108,6 +137,21 @@ export function ModelRowContent(
         </View>
         {props.trailingSelection}
       </Pressable>
+      {props.llamaSwap?.onUnload ? (
+        <Pressable
+          accessibilityLabel={gt("Unload model")}
+          accessibilityRole="button"
+          className="min-h-[44px] min-w-[44px] items-center justify-center android:min-h-[48px] android:min-w-[48px]"
+          onPress={props.llamaSwap.onUnload}
+        >
+          <SymbolView
+            name="power"
+            size={18}
+            tintColorClassName="accent-icon-subtle"
+            type="monochrome"
+          />
+        </Pressable>
+      ) : null}
       {props.onToggleHidden ? (
         <Pressable
           accessibilityLabel={

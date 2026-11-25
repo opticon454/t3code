@@ -1,3 +1,4 @@
+import { CustomModelEndpointId } from "./customModelEndpointId.ts";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import * as SchemaTransformation from "effect/SchemaTransformation";
@@ -77,6 +78,15 @@ export const ProviderInstanceConfig = Schema.Struct({
   displayName: Schema.optional(TrimmedNonEmptyString),
   accentColor: Schema.optional(TrimmedNonEmptyString),
   environment: Schema.optionalKey(ProviderInstanceEnvironment),
+  /** A saved custom model endpoint whose URL, key and header this instance uses. */
+  endpointId: Schema.optionalKey(CustomModelEndpointId),
+  /** Derived by the server from the saved endpoint. Ignored when written. */
+  resolvedEndpoint: Schema.optionalKey(
+    Schema.Struct({
+      origin: TrimmedNonEmptyString,
+      defaultModel: Schema.optionalKey(TrimmedNonEmptyString),
+    }),
+  ),
   enabled: Schema.optionalKey(Schema.Boolean),
   config: Schema.optionalKey(Schema.Unknown),
 });

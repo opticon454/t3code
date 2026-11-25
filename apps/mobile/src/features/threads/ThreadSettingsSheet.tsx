@@ -2,7 +2,7 @@ import {
   getPromptControlledTraits,
   getTraitSelectChange,
 } from "@t3tools/client-runtime/model-traits";
-import { T, useGT, useLocale, useMessages } from "gt-react-native";
+import { T, msg, useGT, useLocale, useMessages } from "gt-react-native";
 import * as Dialog from "../../components/ui/Dialog";
 import { createV5StackNavigator as createNativeStackNavigator } from "../../native/createV5StackNavigator";
 import { useSheetStackOptions } from "../layout/nested-stacks";
@@ -109,6 +109,7 @@ import {
 import { useSearchToolbarInset } from "../../components/ui/useBarInset";
 import type { AppBarSearch } from "../../components/ui/AppBar";
 import { ModelRow, ChoiceRow } from "./ThreadSettingsRows";
+import { useLlamaSwapLoadedModels, useLlamaSwapRow } from "./useLlamaSwapRow";
 import {
   compatibleRuntimeModeForChoices,
   runtimeModeChoicesForSupportedModes,
@@ -760,10 +761,17 @@ function ThreadSettingsModelListRow(props: {
   readonly isLast: boolean;
 }) {
   const session = useThreadSettingsSession();
-  const onPress = () => session.pressModel(props.option);
+  const swap = useLlamaSwapRow({
+    environmentId: session.environmentId,
+    instanceId: props.option.selection.instanceId,
+    model: props.option.selection.model,
+    driver: props.option.providerDriver,
+  });
+  const onPress = () => swap.confirmPick(() => session.pressModel(props.option));
 
   return (
     <ModelRow
+      llamaSwap={swap.llamaSwap}
       isFirst={props.isFirst}
       isLast={props.isLast}
       onPress={onPress}
@@ -887,13 +895,14 @@ function buildThreadSettingsCatalogItems(
   session: ThreadSettingsSessionValue,
   resolve: MessageResolver,
   locale: string,
+  { loaded: loadedModels, authFailed }: ReturnType<typeof useLlamaSwapLoadedModels>,
 ): ReadonlyArray<ThreadSettingsCatalogItem> {
   return session.providerGroups.flatMap((group) => {
     if (session.providerFilter !== null && group.providerKey !== session.providerFilter) {
       return [];
     }
     const driver = group.models[0]?.providerDriver ?? group.providerKey;
-    const visibleModels = visibleCatalogModels({
+    const catalogModels = visibleCatalogModels({
       models: group.models,
       providerLabel: group.providerLabel,
       query: session.searchQuery,
@@ -902,6 +911,16 @@ function buildThreadSettingsCatalogItems(
       showLegacy: session.manageHidden || session.showLegacy,
       isDisplayed: session.isDisplayed,
     });
+    // The model llama-swap has loaded leads its provider; the rest keep their order.
+    const isLoaded = (option: ModelOption) =>
+      loadedModels.has(`${option.selection.instanceId}\0${option.selection.model}`);
+    const visibleModels =
+      loadedModels.size === 0
+        ? catalogModels
+        : [
+            ...catalogModels.filter(isLoaded),
+            ...catalogModels.filter((option) => !isLoaded(option)),
+          ];
     const updateRequiredNotice =
       group.updateRequired && !session.favoritesOnly
         ? formatProviderUpdateRequiredNotice(
@@ -950,6 +969,19 @@ function buildThreadSettingsCatalogItems(
               kind: "notice" as const,
               key: `notice:${group.providerKey}`,
               text: updateRequiredNotice,
+            },
+          ]
+        : []),
+      ...(!collapsed && group.models.some((option) => authFailed.has(option.selection.instanceId))
+        ? [
+            {
+              kind: "notice" as const,
+              key: `notice:llama-swap-key:${group.providerKey}`,
+              text: resolve(
+                msg(
+                  "llama-swap rejected the API key. Check it under Settings, Providers, Custom model endpoints.",
+                ),
+              ),
             },
           ]
         : []),
@@ -1110,7 +1142,13 @@ function ThreadSettingsMainContent(props: {
   const reducedMotion = useReducedMotion();
   const reduceMotionEnabled = useReduceMotionEnabled();
   const animationsReady = listLoaded && !reducedMotion && !reduceMotionEnabled;
-  const catalogItems = buildThreadSettingsCatalogItems(session, m, locale);
+  const llamaSwapModels = useLlamaSwapLoadedModels(
+    session.environmentId,
+    session.providerGroups.flatMap((group) =>
+      group.models.map((option) => option.selection.instanceId),
+    ),
+  );
+  const catalogItems = buildThreadSettingsCatalogItems(session, m, locale, llamaSwapModels);
   const hasActiveCatalogFilter =
     session.favoritesOnly ||
     session.providerFilter !== null ||

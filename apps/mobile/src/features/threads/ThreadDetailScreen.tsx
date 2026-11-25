@@ -183,6 +183,8 @@ import type {
 } from "../../lib/threadActivity";
 import { PendingApprovalCard } from "./PendingApprovalCard";
 import { ComposerErrorNotice } from "./ComposerErrorNotice";
+import { LlamaSwapLoadNotice } from "./LlamaSwapLoadNotice";
+import { LlamaSwapSwapOutNotice } from "./LlamaSwapSwapOutNotice";
 import { ManagedRuntimeModeNotice } from "./ManagedRuntimeModeNotice";
 import { FreshSessionNotice } from "./FreshSessionNotice";
 import { ComposerFeedback } from "./ComposerFeedback";
@@ -1779,6 +1781,19 @@ function ThreadDetailBody(
                         policy={props.serverConfig?.managedPolicy}
                       />
                     ) : null}
+                    <LlamaSwapSwapOutNotice
+                      environmentId={props.environmentId}
+                      threadId={props.selectedThread.id}
+                    />
+                    <LlamaSwapLoadNotice
+                      environmentId={props.environmentId}
+                      provider={props.serverConfig?.providers.find(
+                        (provider) =>
+                          provider.instanceId === props.selectedThread.modelSelection.instanceId,
+                      )}
+                      model={props.selectedThread.modelSelection.model}
+                      busy={props.selectedThread.runtime?.activeRunId != null}
+                    />
                     {composerError !== null ? (
                       <Animated.View
                         className="shrink-0"

@@ -102,6 +102,7 @@ import { ExpandableText } from "./ExpandableText";
 import { IntervalSecondsField } from "./IntervalSecondsField";
 import { ProviderInstanceCard } from "./ProviderInstanceCard";
 import { useSecretSources } from "./SecretSourceInput";
+import { CustomModelEndpointsSettings } from "./CustomModelEndpointsSettings";
 import { TextGeneratorsSettings } from "./TextGeneratorsSettings";
 import { UsageProviderSettings } from "./UsageProviderSettings";
 import { ProviderSetupSection, readAntigravityAuthMethod } from "./ProviderSetupSection";
@@ -1150,6 +1151,13 @@ export function EnvironmentProviderSettings({
         environmentId={environmentId}
         environmentLabel={environmentLabel}
         sources={settings.usageLimitSources}
+        readOnly={readOnly}
+      />
+
+      <CustomModelEndpointsSettings
+        key={`custom-model-endpoints:${environmentId}`}
+        environmentId={environmentId}
+        environmentLabel={environmentLabel}
         readOnly={readOnly}
       />
 

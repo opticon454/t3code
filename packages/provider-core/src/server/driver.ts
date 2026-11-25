@@ -45,6 +45,8 @@ export interface ProviderInstance {
   readonly displayName: string | undefined;
   readonly accentColor?: string | undefined;
   readonly enabled: boolean;
+  /** The resolved instance environment, set by the registry. Server-side only; never sent to clients. */
+  readonly environment?: ResolvedProviderInstanceEnvironment;
   readonly snapshot: ManagedServerProvider;
   readonly snapshotForCwd?: (
     cwd: string,
@@ -109,6 +111,8 @@ export interface ProviderDriverCreateInput<Config> {
   readonly displayName: string | undefined;
   readonly accentColor?: string | undefined;
   readonly environment: ResolvedProviderInstanceEnvironment;
+  /** The origin of the saved custom endpoint this instance uses, when it uses one. */
+  readonly endpointOrigin?: string | undefined;
   readonly enabled: boolean;
   readonly config: Config;
 }

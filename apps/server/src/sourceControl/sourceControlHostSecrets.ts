@@ -121,6 +121,7 @@ export const invalidateSettingsSecrets = Effect.fn("SettingsSecrets.invalidate")
       | "sourceControlHosts"
       | "usageLimitSources"
       | "textGenerators"
+      | "customModelEndpoints"
       | "easDeviceHosts"
       | "simlockDeviceHosts"
       | "cloudSpeechCredentials"
@@ -133,6 +134,9 @@ export const invalidateSettingsSecrets = Effect.fn("SettingsSecrets.invalidate")
       ...collectSourceControlHostSecretReferences(current.sourceControlHosts),
       ...collectUsageLimitSecretReferences(current.usageLimitSources),
       ...Object.values(current.textGenerators).flatMap(({ apiKey }) =>
+        isSecretReference(apiKey) ? [apiKey] : [],
+      ),
+      ...Object.values(current.customModelEndpoints).flatMap(({ apiKey }) =>
         isSecretReference(apiKey) ? [apiKey] : [],
       ),
       ...collectDeviceHostSecretReferences(current),

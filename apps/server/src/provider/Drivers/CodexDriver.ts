@@ -24,6 +24,7 @@ import {
   createCodexAdapterV2,
   type CodexAdapterV2DriverEnv,
 } from "../../orchestration-v2/Adapters/CodexAdapterV2.ts";
+import { withLlamaSwapModels } from "../../llamaSwap/withLlamaSwapModels.ts";
 import { ProviderDriverError } from "../Errors.ts";
 import * as ResetCreditCoordinator from "../resetCreditCoordinator.ts";
 import {
@@ -165,6 +166,7 @@ export const CodexDriver: ProviderDriver<
     displayName,
     accentColor,
     environment,
+    endpointOrigin,
     enabled,
     config,
   }) {
@@ -273,7 +275,11 @@ export const CodexDriver: ProviderDriver<
     const checkProvider = modelCatalog.refreshInBackground.pipe(
       Effect.andThen(
         Effect.zipWith(
-          checkCodexProviderStatus(effectiveConfig, undefined, processEnv),
+          checkCodexProviderStatus(effectiveConfig, undefined, processEnv).pipe(
+            Effect.flatMap((draft) =>
+              withLlamaSwapModels(draft, httpClient, processEnv, endpointOrigin),
+            ),
+          ),
           currentCatalog,
           (draft, catalog) => stampIdentity(applyCodexModelCatalog(draft, catalog)),
           { concurrent: true },

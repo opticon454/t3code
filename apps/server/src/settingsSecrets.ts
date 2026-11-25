@@ -2,6 +2,7 @@ import {
   AntigravitySettings,
   ClaudeSettings,
   CloudSpeechCredentials,
+  CustomModelEndpointConfig,
   CodexSettings,
   EasDeviceHostConfig,
   type ProviderInstanceConfig,
@@ -48,6 +49,7 @@ const providerSecretFields = new Map([
 ]);
 const usageLimitSecretFields = secretSettingsFields(UsageLimitSourceConfig);
 const textGeneratorSecretFields = secretSettingsFields(TextGeneratorConfig);
+const customModelEndpointSecretFields = secretSettingsFields(CustomModelEndpointConfig);
 const voiceSecretFields = secretSettingsFields(CloudSpeechCredentials);
 const easDeviceHostSecretFields = secretSettingsFields(EasDeviceHostConfig);
 const simlockDeviceHostSecretFields = secretSettingsFields(SimlockDeviceHostConfig);
@@ -224,6 +226,19 @@ function mapSecretFieldGroups(
     ]),
   ) as ServerSettings["textGenerators"];
 
+  const customModelEndpoints = Object.fromEntries(
+    Object.entries(settings.customModelEndpoints).map(([id, endpoint]) => [
+      id,
+      mapFields(
+        endpoint,
+        customModelEndpointSecretFields,
+        (field, serverHost) =>
+          `custom-model-endpoint-${encode(id)}-${encode(field)}` +
+          (serverHost === null ? "" : `-${encode(serverHost)}`),
+      ),
+    ]),
+  ) as ServerSettings["customModelEndpoints"];
+
   const easDeviceHosts = settings.easDeviceHosts.map(
     (host) =>
       mapFields(
@@ -258,6 +273,7 @@ function mapSecretFieldGroups(
     sourceControlHosts,
     usageLimitSources,
     textGenerators,
+    customModelEndpoints,
     easDeviceHosts,
     simlockDeviceHosts,
   };
