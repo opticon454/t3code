@@ -109,7 +109,7 @@ import {
 import { useSearchToolbarInset } from "../../components/ui/useBarInset";
 import type { AppBarSearch } from "../../components/ui/AppBar";
 import { ModelRow, ChoiceRow } from "./ThreadSettingsRows";
-import { useLlamaSwapRow } from "./useLlamaSwapRow";
+import { useLlamaSwapLoadedModels, useLlamaSwapRow } from "./useLlamaSwapRow";
 import {
   compatibleRuntimeModeForChoices,
   runtimeModeChoicesForSupportedModes,
@@ -895,13 +895,14 @@ function buildThreadSettingsCatalogItems(
   session: ThreadSettingsSessionValue,
   resolve: MessageResolver,
   locale: string,
+  loadedModels: ReadonlySet<string>,
 ): ReadonlyArray<ThreadSettingsCatalogItem> {
   return session.providerGroups.flatMap((group) => {
     if (session.providerFilter !== null && group.providerKey !== session.providerFilter) {
       return [];
     }
     const driver = group.models[0]?.providerDriver ?? group.providerKey;
-    const visibleModels = visibleCatalogModels({
+    const catalogModels = visibleCatalogModels({
       models: group.models,
       providerLabel: group.providerLabel,
       query: session.searchQuery,
@@ -910,6 +911,16 @@ function buildThreadSettingsCatalogItems(
       showLegacy: session.manageHidden || session.showLegacy,
       isDisplayed: session.isDisplayed,
     });
+    // The model llama-swap has loaded leads its provider; the rest keep their order.
+    const isLoaded = (option: ModelOption) =>
+      loadedModels.has(`${option.selection.instanceId}\0${option.selection.model}`);
+    const visibleModels =
+      loadedModels.size === 0
+        ? catalogModels
+        : [
+            ...catalogModels.filter(isLoaded),
+            ...catalogModels.filter((option) => !isLoaded(option)),
+          ];
     const updateRequiredNotice =
       group.updateRequired && !session.favoritesOnly
         ? formatProviderUpdateRequiredNotice(
@@ -1118,7 +1129,13 @@ function ThreadSettingsMainContent(props: {
   const reducedMotion = useReducedMotion();
   const reduceMotionEnabled = useReduceMotionEnabled();
   const animationsReady = listLoaded && !reducedMotion && !reduceMotionEnabled;
-  const catalogItems = buildThreadSettingsCatalogItems(session, m, locale);
+  const loadedModels = useLlamaSwapLoadedModels(
+    session.environmentId,
+    session.providerGroups.flatMap((group) =>
+      group.models.map((option) => option.selection.instanceId),
+    ),
+  );
+  const catalogItems = buildThreadSettingsCatalogItems(session, m, locale, loadedModels);
   const hasActiveCatalogFilter =
     session.favoritesOnly ||
     session.providerFilter !== null ||

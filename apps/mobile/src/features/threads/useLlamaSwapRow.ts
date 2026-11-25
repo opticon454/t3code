@@ -1,6 +1,7 @@
 import { RegistryContext, useAtomValue } from "@effect/atom-react";
 import { locateLlamaSwapModel, planLlamaSwapSwitch } from "@t3tools/client-runtime/state/llamaSwap";
 import type { EnvironmentId, ProviderInstanceId } from "@t3tools/contracts";
+import { AsyncResult, Atom } from "effect/reactivity";
 import { useGT } from "gt-react-native";
 import { useContext } from "react";
 
@@ -168,4 +169,65 @@ export function useLlamaSwapRow(input: {
       });
     },
   };
+}
+
+interface LoadedModelsTarget {
+  readonly instanceId: string;
+  readonly subProvider?: string;
+}
+
+const loadedModelsAtom = Atom.family((key: string) =>
+  Atom.make((get): ReadonlySet<string> => {
+    const { environmentId, targets } = JSON.parse(key) as {
+      environmentId: EnvironmentId;
+      targets: ReadonlyArray<LoadedModelsTarget>;
+    };
+    const loaded = new Set<string>();
+    for (const target of targets) {
+      const status = AsyncResult.getOrElse(
+        get(
+          serverEnvironment.llamaSwapStatus({
+            environmentId,
+            input: {
+              instanceId: target.instanceId as ProviderInstanceId,
+              ...(target.subProvider === undefined ? {} : { subProvider: target.subProvider }),
+            },
+          }),
+        ),
+        () => null,
+      );
+      if (!status?.supported) continue;
+      const prefix = target.subProvider === undefined ? "" : `${target.subProvider}/`;
+      for (const entry of status.running) {
+        if (entry.state === "ready") loaded.add(`${target.instanceId}\0${prefix}${entry.model}`);
+      }
+    }
+    return loaded;
+  }),
+);
+
+/**
+ * The models llama-swap has loaded, as `instanceId\0slug`, for the instances in a model list.
+ * The picker sorts these first.
+ */
+export function useLlamaSwapLoadedModels(
+  environmentId: EnvironmentId | null,
+  instanceIds: ReadonlyArray<string>,
+): ReadonlySet<string> {
+  const configs = useAtomValue(environmentServerConfigsAtom);
+  const providers = environmentId ? (configs.get(environmentId)?.providers ?? []) : [];
+  const targets = [...new Set(instanceIds)].flatMap((instanceId): Array<LoadedModelsTarget> => {
+    const snapshot = providers.find((provider) => provider.instanceId === instanceId);
+    if (!snapshot) return [];
+    return [
+      ...(snapshot.auth.endpoint ? [{ instanceId }] : []),
+      ...Object.keys(snapshot.subProviderEndpoints ?? {}).map((subProvider) => ({
+        instanceId,
+        subProvider,
+      })),
+    ];
+  });
+  return useAtomValue(
+    loadedModelsAtom(JSON.stringify({ environmentId, targets: environmentId ? targets : [] })),
+  );
 }
