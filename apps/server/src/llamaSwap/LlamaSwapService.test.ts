@@ -136,3 +136,17 @@ effectIt.effect("opens one shared log stream per origin", () =>
     }).pipe(Effect.provide(serviceWith(client)));
   }),
 );
+
+effectIt.effect("sends the key in the endpoint's own header and no other", () => {
+  const seen: Array<Record<string, string>> = [];
+  const client = HttpClient.make((request) => {
+    seen.push({ ...request.headers });
+    return respond(request, new Response("no", { status: 404 }));
+  });
+  return Effect.gen(function* () {
+    const service = yield* LlamaSwap.LlamaSwapService;
+    yield* service.status({ origin: "http://azure.test", apiKey: "k", authHeader: "api-key" });
+    expect(seen[0]?.["api-key"]).toBe("k");
+    expect(seen[0]?.authorization).toBeUndefined();
+  }).pipe(Effect.provide(serviceWith(client)));
+});

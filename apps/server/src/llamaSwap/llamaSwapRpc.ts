@@ -12,6 +12,10 @@ import { sweepSwappedOut, type SweepThread } from "./swapSweep.ts";
 const POLL_INTERVAL = "1 second";
 const SWEEP_INTERVAL = "20 seconds";
 
+export type CustomEndpointLookup = (
+  instanceId: ProviderInstanceId,
+) => Effect.Effect<LlamaSwapEndpoint | undefined>;
+
 type Instances = ProviderInstanceRegistry.ProviderInstanceRegistry["Service"];
 
 /**
@@ -20,9 +24,13 @@ type Instances = ProviderInstanceRegistry.ProviderInstanceRegistry["Service"];
  */
 const resolveInstanceEndpoint = Effect.fn("LlamaSwapRpc.resolveInstanceEndpoint")(function* (
   instances: Instances,
+  customEndpoint: CustomEndpointLookup,
   instanceId: ProviderInstanceId,
   subProvider?: string,
 ) {
+  // A saved endpoint answers for the whole instance, unless an upstream provider names its own.
+  const saved = yield* customEndpoint(instanceId);
+  if (saved && subProvider === undefined) return saved;
   const instance = yield* instances.getInstance(instanceId);
   if (!instance) {
     return yield* new LlamaSwapError({ instanceId, detail: "Unknown provider instance." });
@@ -50,6 +58,7 @@ export const makeLlamaSwapRpc = (
   instances: Instances,
   llamaSwap: LlamaSwapService["Service"],
   /** Live threads with a provider session, which a swap-out could interrupt. */
+  customEndpoint: CustomEndpointLookup,
   readThreads: Effect.Effect<
     ReadonlyArray<{
       readonly id: SweepThread["id"];
@@ -65,7 +74,7 @@ export const makeLlamaSwapRpc = (
     readonly subProvider?: string | undefined;
   }) =>
     Stream.unwrap(
-      resolveInstanceEndpoint(instances, input.instanceId, input.subProvider).pipe(
+      resolveInstanceEndpoint(instances, customEndpoint, input.instanceId, input.subProvider).pipe(
         Effect.map((endpoint) =>
           Stream.fromEffectSchedule(
             Effect.gen(function* () {
@@ -112,14 +121,17 @@ export const makeLlamaSwapRpc = (
         const viaProvider =
           slash < 0
             ? Option.none()
-            : yield* resolveInstanceEndpoint(instances, instanceId, model.slice(0, slash)).pipe(
-                Effect.option,
-              );
+            : yield* resolveInstanceEndpoint(
+                instances,
+                customEndpoint,
+                instanceId,
+                model.slice(0, slash),
+              ).pipe(Effect.option);
         const found = Option.isSome(viaProvider)
           ? Option.some({ endpoint: viaProvider.value, model: model.slice(slash + 1) })
-          : (yield* resolveInstanceEndpoint(instances, instanceId).pipe(Effect.option)).pipe(
-              Option.map((endpoint) => ({ endpoint, model })),
-            );
+          : (yield* resolveInstanceEndpoint(instances, customEndpoint, instanceId).pipe(
+              Effect.option,
+            )).pipe(Option.map((endpoint) => ({ endpoint, model })));
         located.set(key, found);
         return found;
       });
@@ -152,7 +164,12 @@ export const makeLlamaSwapRpc = (
     readonly subProvider?: string | undefined;
     readonly model: string;
   }) {
-    const endpoint = yield* resolveInstanceEndpoint(instances, input.instanceId, input.subProvider);
+    const endpoint = yield* resolveInstanceEndpoint(
+      instances,
+      customEndpoint,
+      input.instanceId,
+      input.subProvider,
+    );
     yield* llamaSwap
       .unload(endpoint, input.model)
       .pipe(

@@ -196,6 +196,7 @@ import * as AcpRegistryRuntimeCoordinator from "@t3tools/provider-acp-registry/s
 import * as ProviderMaintenanceRunner from "./provider/providerMaintenanceRunner.ts";
 import * as ProviderAuthService from "./provider/ProviderAuthService.ts";
 import * as LlamaSwap from "./llamaSwap/LlamaSwapService.ts";
+import { makeCustomEndpointLookup } from "./llamaSwap/customEndpoint.ts";
 import { makeLlamaSwapRpc } from "./llamaSwap/llamaSwapRpc.ts";
 import * as ProviderInstallation from "./provider/providerInstallation.ts";
 import * as ServerSelfUpdate from "./cloud/selfUpdate.ts";
@@ -1585,9 +1586,19 @@ export const layerWsRpc = (
       const providerMaintenanceRunner = yield* ProviderMaintenanceRunner.ProviderMaintenanceRunner;
       const providerAuth = yield* ProviderAuthService.ProviderAuthService;
       const providerInstallation = yield* ProviderInstallation.ProviderInstallation;
+      const serverSelfUpdate = yield* ServerSelfUpdate.ServerSelfUpdate;
+      const npmRelease = yield* NpmRelease.NpmRelease;
+      const config = yield* ServerConfig.ServerConfig;
+      const lifecycleEvents = yield* ServerLifecycleEvents.ServerLifecycleEvents;
+      const storageCleanup = yield* StorageCleanup.StorageCleanup;
+      const databaseStorage = yield* DatabaseStorage.DatabaseStorage;
+      const serverSettings = yield* ServerSettings.ServerSettingsService;
+      const hostEnvironment = yield* HostProcess.Environment;
+      const secretResolver = yield* SecretResolver.SecretResolver;
       const llamaSwapRpc = makeLlamaSwapRpc(
         providerInstances,
         yield* LlamaSwap.LlamaSwapService,
+        makeCustomEndpointLookup(serverSettings, secretResolver),
         threadManagement.getShellSnapshot({ location: "active" }).pipe(
           Effect.map((snapshot) =>
             snapshot.threads.flatMap((thread) =>
@@ -1606,15 +1617,6 @@ export const layerWsRpc = (
           Effect.orElseSucceed(() => []),
         ),
       );
-      const serverSelfUpdate = yield* ServerSelfUpdate.ServerSelfUpdate;
-      const npmRelease = yield* NpmRelease.NpmRelease;
-      const config = yield* ServerConfig.ServerConfig;
-      const lifecycleEvents = yield* ServerLifecycleEvents.ServerLifecycleEvents;
-      const storageCleanup = yield* StorageCleanup.StorageCleanup;
-      const databaseStorage = yield* DatabaseStorage.DatabaseStorage;
-      const serverSettings = yield* ServerSettings.ServerSettingsService;
-      const hostEnvironment = yield* HostProcess.Environment;
-      const secretResolver = yield* SecretResolver.SecretResolver;
       const peerLinks = yield* PeerLinks.PeerLinks;
       const peerLinkRequests = yield* PeerLinkRequests.PeerLinkRequests;
       const peerThreadRelay = yield* PeerThreadRelay.PeerThreadRelay;

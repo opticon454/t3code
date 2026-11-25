@@ -170,3 +170,28 @@ export function consumeLogChunk(
   }
   return { buffer: rest, ...(latestLine !== undefined ? { latestLine } : {}) };
 }
+
+export type LlamaSwapAuthHeader = "authorization-bearer" | "api-key" | "x-api-key" | "basic";
+
+/**
+ * The one header that carries a key. Two headers on a request hung llama-swap, so this returns
+ * exactly one. Basic sends the key as the password, or as `user:password` when it has a colon.
+ */
+export function authHeaderFor(
+  style: LlamaSwapAuthHeader,
+  apiKey: string,
+): { readonly name: string; readonly value: string } {
+  switch (style) {
+    case "api-key":
+      return { name: "api-key", value: apiKey };
+    case "x-api-key":
+      return { name: "x-api-key", value: apiKey };
+    case "basic":
+      return {
+        name: "authorization",
+        value: `Basic ${btoa(apiKey.includes(":") ? apiKey : `:${apiKey}`)}`,
+      };
+    default:
+      return { name: "authorization", value: `Bearer ${apiKey}` };
+  }
+}

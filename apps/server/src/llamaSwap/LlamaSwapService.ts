@@ -9,7 +9,9 @@ import * as Stream from "effect/Stream";
 import { HttpClient, HttpClientRequest } from "effect/http";
 
 import {
+  authHeaderFor,
   consumeLogChunk,
+  type LlamaSwapAuthHeader,
   type LlamaSwapListedModel,
   type LlamaSwapRunningModel,
   parseModelList,
@@ -21,6 +23,10 @@ import {
 export interface LlamaSwapEndpoint {
   readonly origin: string;
   readonly apiKey?: string | undefined;
+  /** How the key is sent. Bearer when unset. */
+  readonly authHeader?: LlamaSwapAuthHeader | undefined;
+  /** The model's whole window, for a model whose size the server cannot report. */
+  readonly defaultContextTokens?: number | undefined;
 }
 
 export interface LlamaSwapStatus {
@@ -81,7 +87,9 @@ const request = (
   const base = `${endpoint.origin}${path}`;
   const req = method === "GET" ? HttpClientRequest.get(base) : HttpClientRequest.post(base);
   // One header only: a request carrying both Bearer and x-api-key hung against llama-swap.
-  return endpoint.apiKey ? HttpClientRequest.bearerToken(req, endpoint.apiKey) : req;
+  if (!endpoint.apiKey) return req;
+  const header = authHeaderFor(endpoint.authHeader ?? "authorization-bearer", endpoint.apiKey);
+  return HttpClientRequest.setHeader(req, header.name, header.value);
 };
 
 const getJson = (

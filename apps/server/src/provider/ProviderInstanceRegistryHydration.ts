@@ -19,6 +19,7 @@ import type * as SqlClient from "effect/sql/SqlClient";
 import * as Path from "effect/Path";
 import * as Stream from "effect/Stream";
 
+import { customEndpointEnvironment } from "./customEndpointEnvironment.ts";
 import * as ManagedProviders from "../policy/managedProviders.ts";
 import * as Settings from "../serverSettings.ts";
 import * as SecretResolver from "../secrets/SecretResolver.ts";
@@ -81,6 +82,22 @@ export const deriveProviderInstanceConfigMap = (
           : {}),
       };
     }
+  }
+
+  // A saved endpoint supplies the instance's URL, key and header; the instance's own variables win.
+  for (const [instanceId, instance] of Object.entries(merged)) {
+    const endpoint =
+      instance.endpointId === undefined
+        ? undefined
+        : settings.customModelEndpoints[instance.endpointId];
+    if (!endpoint) continue;
+    merged[instanceId] = {
+      ...instance,
+      environment: [
+        ...customEndpointEnvironment(instance.driver, endpoint),
+        ...(instance.environment ?? []),
+      ],
+    };
   }
 
   return merged as ProviderInstanceConfigMap;

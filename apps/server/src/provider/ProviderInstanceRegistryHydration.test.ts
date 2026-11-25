@@ -5,8 +5,10 @@ import {
   ProviderInstanceId,
   SecretProviderId,
   SecretProviderKind,
+  ServerSettings as ServerSettingsSchema,
   type ServerSettings,
 } from "@t3tools/contracts";
+import * as Schema from "effect/Schema";
 import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as ProviderHost from "@t3tools/provider-core/server/ProviderHost";
@@ -264,4 +266,27 @@ describe("providerHostLayer", () => {
         expect(seen.get("hydrated")?.trackAgent).toBeTypeOf("function");
       }),
   );
+});
+
+const decodeServerSettings = Schema.decodeSync(ServerSettingsSchema);
+
+describe("deriveProviderInstanceConfigMap endpoints", () => {
+  it("applies a saved endpoint's variables before the instance's own", () => {
+    const settings = decodeServerSettings({
+      customModelEndpoints: {
+        swap: { baseUrl: "http://swap:8080", apiKey: "k" },
+      },
+      providerInstances: {
+        local: {
+          driver: "claudeAgent",
+          endpointId: "swap",
+          environment: [{ name: "ANTHROPIC_BASE_URL", value: "http://mine", sensitive: false }],
+        },
+      },
+    });
+    const environment =
+      deriveProviderInstanceConfigMap(settings)[ProviderInstanceId.make("local")]?.environment;
+    expect(environment?.map((variable) => variable.name)).toContain("ANTHROPIC_AUTH_TOKEN");
+    expect(environment?.at(-1)).toMatchObject({ name: "ANTHROPIC_BASE_URL", value: "http://mine" });
+  });
 });

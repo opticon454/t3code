@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  authHeaderFor,
   consumeLogChunk,
   MAX_LOG_TAIL_BUFFER_CHARS,
   normalizeLlamaSwapOrigin,
@@ -152,5 +153,18 @@ describe("consumeLogChunk", () => {
   it("skips malformed frames and drops an unbounded remainder", () => {
     expect(consumeLogChunk("", "data: not json\n\nevent: ping\n\n")).toEqual({ buffer: "" });
     expect(consumeLogChunk("", "x".repeat(MAX_LOG_TAIL_BUFFER_CHARS + 1))).toEqual({ buffer: "" });
+  });
+});
+
+describe("authHeaderFor", () => {
+  it("returns exactly one header in the requested style", () => {
+    expect(authHeaderFor("authorization-bearer", "k")).toEqual({
+      name: "authorization",
+      value: "Bearer k",
+    });
+    expect(authHeaderFor("api-key", "k")).toEqual({ name: "api-key", value: "k" });
+    expect(authHeaderFor("x-api-key", "k")).toEqual({ name: "x-api-key", value: "k" });
+    expect(authHeaderFor("basic", "k").value).toBe(`Basic ${btoa(":k")}`);
+    expect(authHeaderFor("basic", "u:p").value).toBe(`Basic ${btoa("u:p")}`);
   });
 });

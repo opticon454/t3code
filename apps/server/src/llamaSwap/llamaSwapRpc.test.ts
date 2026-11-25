@@ -9,6 +9,7 @@ import { LlamaSwapUnloadError, type LlamaSwapService } from "./LlamaSwapService.
 import { makeLlamaSwapRpc } from "./llamaSwapRpc.ts";
 
 const id = ProviderInstanceId.make("claude-local");
+const noSaved = () => Effect.undefined;
 
 const instances = (
   endpoint: string | undefined,
@@ -53,6 +54,7 @@ effectIt.effect("unloads on the instance's own endpoint with its configured key"
     const rpc = makeLlamaSwapRpc(
       instances("http://10.0.0.5:8080/v1", [["ANTHROPIC_AUTH_TOKEN", "sk-1"]]),
       swap(calls),
+      noSaved,
       Effect.succeed([]),
     );
     yield* rpc.unload({ instanceId: id, model: "qwen" });
@@ -66,21 +68,21 @@ effectIt.effect(
     Effect.gen(function* () {
       const calls: Array<unknown> = [];
       const unknown = yield* Effect.flip(
-        makeLlamaSwapRpc(instances("http://h"), swap(calls), Effect.succeed([])).unload({
+        makeLlamaSwapRpc(instances("http://h"), swap(calls), noSaved, Effect.succeed([])).unload({
           instanceId: ProviderInstanceId.make("other"),
           model: "m",
         }),
       );
       expect(unknown.message).toBe("Unknown provider instance.");
       const none = yield* Effect.flip(
-        makeLlamaSwapRpc(instances(undefined), swap(calls), Effect.succeed([])).unload({
+        makeLlamaSwapRpc(instances(undefined), swap(calls), noSaved, Effect.succeed([])).unload({
           instanceId: id,
           model: "m",
         }),
       );
       expect(none.message).toBe("This provider instance does not use a custom endpoint.");
       const rejected = yield* Effect.flip(
-        makeLlamaSwapRpc(instances("http://h"), swap(calls), Effect.succeed([])).unload({
+        makeLlamaSwapRpc(instances("http://h"), swap(calls), noSaved, Effect.succeed([])).unload({
           instanceId: id,
           model: "bad",
         }),
@@ -93,7 +95,12 @@ effectIt.effect(
 effectIt.effect("subscribe emits the status once while it is unchanged", () =>
   Effect.gen(function* () {
     const calls: Array<unknown> = [];
-    const first = yield* makeLlamaSwapRpc(instances("http://h:1"), swap(calls), Effect.succeed([]))
+    const first = yield* makeLlamaSwapRpc(
+      instances("http://h:1"),
+      swap(calls),
+      noSaved,
+      Effect.succeed([]),
+    )
       .subscribe({ instanceId: id })
       .pipe(Stream.take(1), Stream.runCollect);
     expect(first).toEqual([status]);
@@ -114,6 +121,7 @@ effectIt.live("swapEvents stays silent when no instance has a custom endpoint", 
         ]),
       } as never,
       swap(calls),
+      noSaved,
       Effect.succeed([]),
     ).swapEvents.pipe(Stream.take(1), Stream.runCollect, Effect.timeoutOption("50 millis"));
     expect(events).toEqual(Option.none());
@@ -127,6 +135,7 @@ effectIt.effect("unloads on the endpoint of the named upstream provider", () =>
     const rpc = makeLlamaSwapRpc(
       instances(undefined, [["LLAMA_SWAP_API_KEY", "k"]], { swap: "http://10.0.0.9:9292/v1" }),
       swap(calls),
+      noSaved,
       Effect.succeed([]),
     );
     yield* rpc.unload({ instanceId: id, subProvider: "swap", model: "qwen" });
@@ -135,5 +144,22 @@ effectIt.effect("unloads on the endpoint of the named upstream provider", () =>
       rpc.unload({ instanceId: id, subProvider: "other", model: "qwen" }),
     );
     expect(missing.message).toBe("This provider instance does not use a custom endpoint.");
+  }),
+);
+
+effectIt.effect("a saved endpoint answers for the instance, with its header style", () =>
+  Effect.gen(function* () {
+    const calls: Array<unknown> = [];
+    const rpc = makeLlamaSwapRpc(
+      instances(undefined),
+      swap(calls),
+      () =>
+        Effect.succeed({ origin: "http://azure:1", apiKey: "k", authHeader: "api-key" as const }),
+      Effect.succeed([]),
+    );
+    yield* rpc.unload({ instanceId: id, model: "qwen" });
+    expect(calls).toEqual([
+      ["unload", { origin: "http://azure:1", apiKey: "k", authHeader: "api-key" }, "qwen"],
+    ]);
   }),
 );
