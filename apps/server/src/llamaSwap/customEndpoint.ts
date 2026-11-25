@@ -17,21 +17,27 @@ import { HttpClient, HttpClientRequest } from "effect/http";
 import { authHeaderFor, normalizeLlamaSwapOrigin, parseModelList } from "./llamaSwapProtocol.ts";
 
 /**
- * The saved endpoint an instance uses, with its key read, shaped for llama-swap calls. Undefined
- * when the instance has no endpoint, or its URL is not usable. A key that cannot be read leaves
- * the endpoint without one, so the server answers 401 rather than a wrong credential going out.
+ * The saved endpoint an instance uses, with its key read. With `matchOrigin`, the one saved at
+ * that address instead, for OpenCode and Pi, whose own files name the server. An unreadable key
+ * leaves the endpoint without one, so the server answers 401.
  */
 export const makeCustomEndpointLookup =
   (
     settings: ServerSettings.ServerSettingsService["Service"],
     secrets: SecretResolver.SecretResolver["Service"],
   ) =>
-  (instanceId: ProviderInstanceId) =>
+  (instanceId: ProviderInstanceId, matchOrigin?: string) =>
     Effect.gen(function* () {
       const current = yield* settings.getSettings;
       const endpointId = current.providerInstances[instanceId]?.endpointId;
       const endpoint =
-        endpointId === undefined ? undefined : current.customModelEndpoints[endpointId];
+        matchOrigin === undefined
+          ? endpointId === undefined
+            ? undefined
+            : current.customModelEndpoints[endpointId]
+          : Object.values(current.customModelEndpoints).find(
+              (candidate) => normalizeLlamaSwapOrigin(candidate.baseUrl) === matchOrigin,
+            );
       const origin = endpoint && normalizeLlamaSwapOrigin(endpoint.baseUrl);
       if (!endpoint || !origin) return undefined;
       const resolved = yield* resolveSettingsSecrets(secrets, CustomModelEndpointConfig, endpoint);

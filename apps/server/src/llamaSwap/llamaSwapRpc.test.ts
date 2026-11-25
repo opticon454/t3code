@@ -195,6 +195,25 @@ effectIt.effect("unloads on the endpoint of the named upstream provider", () =>
   }),
 );
 
+effectIt.effect("an upstream provider borrows the key saved for its address", () =>
+  Effect.gen(function* () {
+    const calls: Array<unknown> = [];
+    const saved = {
+      origin: "http://10.0.0.9:9292",
+      apiKey: "saved-key",
+      authHeader: "basic" as const,
+    };
+    const rpc = makeLlamaSwapRpc(
+      instances(undefined, [], { swap: "http://10.0.0.9:9292/v1" }),
+      swap(calls),
+      (_instance, origin) => Effect.succeed(origin === saved.origin ? saved : undefined),
+      Effect.succeed([]),
+    );
+    yield* rpc.unload({ instanceId: id, subProvider: "swap", model: "qwen" });
+    expect(calls).toEqual([["unload", saved, "qwen"]]);
+  }),
+);
+
 effectIt.effect("a saved endpoint answers for the instance, with its header style", () =>
   Effect.gen(function* () {
     const calls: Array<unknown> = [];

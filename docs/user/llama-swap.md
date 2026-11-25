@@ -102,7 +102,9 @@ need a window of 100,000 tokens or more.
 - OpenCode and Pi only accept models defined in their own configuration, so the picker shows
   those models with their loaded state. It cannot add models the server has but the
   configuration does not.
-- OpenCode and Pi read the API key only from `LLAMA_SWAP_API_KEY` on the instance.
+- OpenCode and Pi use the key saved under **Custom model endpoints** for the same address as
+  their own configuration names. Without a saved endpoint, they read `LLAMA_SWAP_API_KEY` on
+  the instance.
 - When one OpenCode or Pi instance uses several llama-swap servers, the picker shows state for
   the server of the model in use.
 - llama-swap's model states other than `ready`, `starting` and `stopping` show no badge.

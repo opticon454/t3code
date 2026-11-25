@@ -14,6 +14,7 @@ const SWEEP_INTERVAL = "20 seconds";
 
 export type CustomEndpointLookup = (
   instanceId: ProviderInstanceId,
+  matchOrigin?: string,
 ) => Effect.Effect<LlamaSwapEndpoint | undefined>;
 
 type Instances = ProviderInstanceRegistry.ProviderInstanceRegistry["Service"];
@@ -47,6 +48,9 @@ const resolveInstanceEndpoint = Effect.fn("LlamaSwapRpc.resolveInstanceEndpoint"
       detail: "This provider instance does not use a custom endpoint.",
     });
   }
+  // The server's own files name it; a key saved for the same address serves it.
+  const matched = yield* customEndpoint(instanceId, origin);
+  if (matched) return matched;
   const environment = Object.fromEntries(
     (instance.environment ?? []).map((variable) => [variable.name, variable.value]),
   );
