@@ -1,12 +1,11 @@
 import type { EnvironmentId } from "@t3tools/contracts";
 import { useGT } from "gt-react";
-import { locateLlamaSwapModel } from "@t3tools/client-runtime/state/llamaSwap";
+import { llamaSwapLoadStage, locateLlamaSwapModel } from "@t3tools/client-runtime/state/llamaSwap";
 import { LoaderIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import type { ProviderInstanceEntry } from "../../providerInstances";
 import type { ComposerBannerStackItem } from "./ComposerBannerStack";
-import { llamaSwapLoadStage } from "./llamaSwapLoadStage";
 import { useLlamaSwapStatus } from "./useLlamaSwapStatus";
 
 /** Whole seconds since `active` last became true. */

@@ -10,7 +10,7 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
-import type { LlamaSwapSwitchPlan } from "./llamaSwapSwitch";
+import type { LlamaSwapSwitchPlan } from "@t3tools/client-runtime/state/llamaSwap";
 
 export interface LlamaSwapConfirmation {
   readonly kind: "pick" | "unload";

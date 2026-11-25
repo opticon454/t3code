@@ -109,6 +109,7 @@ import {
 import { useSearchToolbarInset } from "../../components/ui/useBarInset";
 import type { AppBarSearch } from "../../components/ui/AppBar";
 import { ModelRow, ChoiceRow } from "./ThreadSettingsRows";
+import { useLlamaSwapRow } from "./useLlamaSwapRow";
 import {
   compatibleRuntimeModeForChoices,
   runtimeModeChoicesForSupportedModes,
@@ -760,10 +761,17 @@ function ThreadSettingsModelListRow(props: {
   readonly isLast: boolean;
 }) {
   const session = useThreadSettingsSession();
-  const onPress = () => session.pressModel(props.option);
+  const swap = useLlamaSwapRow({
+    environmentId: session.environmentId,
+    instanceId: props.option.selection.instanceId,
+    model: props.option.selection.model,
+    driver: props.option.providerDriver,
+  });
+  const onPress = () => swap.confirmPick(() => session.pressModel(props.option));
 
   return (
     <ModelRow
+      llamaSwap={swap.llamaSwap}
       isFirst={props.isFirst}
       isLast={props.isLast}
       onPress={onPress}

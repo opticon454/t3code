@@ -6,8 +6,7 @@ import type { ProviderInstanceEntry } from "../../providerInstances";
 import { environmentProjects } from "../../state/projects";
 import { environmentThreadShells } from "../../state/threads";
 import { type LlamaSwapConfirmation } from "./LlamaSwapConfirmDialog";
-import { locateLlamaSwapModel } from "@t3tools/client-runtime/state/llamaSwap";
-import { planLlamaSwapSwitch } from "./llamaSwapSwitch";
+import { locateLlamaSwapModel, planLlamaSwapSwitch } from "@t3tools/client-runtime/state/llamaSwap";
 
 /**
  * Confirms a pick or unload that would unload another model other threads use, or whose
