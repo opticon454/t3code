@@ -106,6 +106,7 @@ export const ClaudeDriver: ProviderDriver<ClaudeSettings, ClaudeDriverEnv, Path.
     displayName,
     accentColor,
     environment,
+    endpointOrigin,
     enabled,
     config,
   }) {
@@ -294,7 +295,9 @@ export const ClaudeDriver: ProviderDriver<ClaudeSettings, ClaudeDriverEnv, Path.
             ),
           ),
           // Claude Code's own gateway discovery keeps only ids containing "claude".
-          Effect.flatMap((provider) => withLlamaSwapModels(provider, httpClient, processEnv)),
+          Effect.flatMap((provider) =>
+            withLlamaSwapModels(provider, httpClient, processEnv, endpointOrigin),
+          ),
           Effect.tap((provider) =>
             provider.auth.status === "unauthenticated"
               ? Cache.invalidateAll(capabilitiesProbeCache)

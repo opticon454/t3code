@@ -392,6 +392,7 @@ const buildEntry = Effect.fn("ProviderInstanceRegistry.buildEntry")(function* <R
       displayName: entry.displayName,
       accentColor: entry.accentColor,
       environment: secrets.environment,
+      endpointOrigin: entry.resolvedEndpoint?.origin,
       enabled,
       config:
         secrets.config.length === 0

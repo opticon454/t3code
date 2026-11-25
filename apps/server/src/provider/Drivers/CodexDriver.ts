@@ -166,6 +166,7 @@ export const CodexDriver: ProviderDriver<
     displayName,
     accentColor,
     environment,
+    endpointOrigin,
     enabled,
     config,
   }) {
@@ -275,7 +276,9 @@ export const CodexDriver: ProviderDriver<
       Effect.andThen(
         Effect.zipWith(
           checkCodexProviderStatus(effectiveConfig, undefined, processEnv).pipe(
-            Effect.flatMap((draft) => withLlamaSwapModels(draft, httpClient, processEnv)),
+            Effect.flatMap((draft) =>
+              withLlamaSwapModels(draft, httpClient, processEnv, endpointOrigin),
+            ),
           ),
           currentCatalog,
           (draft, catalog) => stampIdentity(applyCodexModelCatalog(draft, catalog)),

@@ -25,7 +25,7 @@ const client = (calls: Array<string>, supported = true) =>
     );
   });
 
-effectIt.effect("adds only the llama-swap models Codex does not list", () =>
+effectIt.effect("adds only the llama-swap models the provider does not list", () =>
   Effect.gen(function* () {
     const calls: Array<string> = [];
     const result = yield* withLlamaSwapModels(draft("http://swap:8080"), client(calls), {
@@ -33,8 +33,22 @@ effectIt.effect("adds only the llama-swap models Codex does not list", () =>
     });
     expect(result.models.map((model) => [model.slug, model.isCustom])).toEqual([
       ["qwen", false],
-      ["gemma", true],
+      ["gemma", false],
     ]);
+    expect(calls[0]).toBe("http://swap:8080/running Bearer k");
+  }),
+);
+
+effectIt.effect("uses the saved endpoint's origin when the provider reports none", () =>
+  Effect.gen(function* () {
+    const calls: Array<string> = [];
+    const result = yield* withLlamaSwapModels(
+      draft(undefined),
+      client(calls),
+      { T3_ENDPOINT_API_KEY: "k" },
+      "http://swap:8080",
+    );
+    expect(result.models.map((model) => model.slug)).toEqual(["qwen", "gemma"]);
     expect(calls[0]).toBe("http://swap:8080/running Bearer k");
   }),
 );

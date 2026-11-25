@@ -111,6 +111,8 @@ export interface ProviderDriverCreateInput<Config> {
   readonly displayName: string | undefined;
   readonly accentColor?: string | undefined;
   readonly environment: ResolvedProviderInstanceEnvironment;
+  /** The origin of the saved custom endpoint this instance uses, when it uses one. */
+  readonly endpointOrigin?: string | undefined;
   readonly enabled: boolean;
   readonly config: Config;
 }
