@@ -30,6 +30,8 @@ import {
 import { ChevronRightIcon } from "lucide-react";
 import { ModelListRow } from "./ModelListRow";
 import { llamaSwapRowProps } from "./llamaSwapRowProps";
+import { LlamaSwapConfirmDialog } from "./LlamaSwapConfirmDialog";
+import { useLlamaSwapGuard } from "./useLlamaSwapGuard";
 import { useLlamaSwapStatus } from "./useLlamaSwapStatus";
 import { ModelPickerSidebar } from "./ModelPickerSidebar";
 import { useProviderWorkspaceSnapshotRefresh } from "./useProviderWorkspaceSnapshotRefresh";
@@ -547,6 +549,20 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
     if (!resolvedModel) return null;
     if (additive && onToggleModel) {
       onToggleModel(instanceId, resolvedModel);
+    } else if (llamaSwap && instanceId === selectedEntry?.instanceId) {
+      // A dialog may take over; the pick then completes on confirm.
+      let proceeded = false;
+      swapGuard.guard({
+        instanceId,
+        status: llamaSwap.status,
+        model: resolvedModel,
+        kind: "pick",
+        proceed: () => {
+          proceeded = true;
+          onInstanceModelChange(instanceId, resolvedModel);
+        },
+      });
+      return proceeded ? resolvedModel : null;
     } else {
       onInstanceModelChange(instanceId, resolvedModel);
     }
@@ -701,6 +717,7 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
   const showSidebar = !isSearching && sidebarInstanceEntries.length > 0;
   const instanceOrder = instanceEntries.map((entry) => entry.instanceId);
 
+  const swapGuard = useLlamaSwapGuard(props.environmentId, instanceEntries);
   const llamaSwap = useLlamaSwapStatus(
     props.environmentId,
     selectedInstanceId === "favorites" ? undefined : entryByInstanceId.get(selectedInstanceId),
@@ -1250,7 +1267,17 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
                     showNewBadge={model.badge === "new"}
                     unavailable={model.isUnavailable === true}
                     {...(model.instanceId === selectedEntry?.instanceId && llamaSwap
-                      ? llamaSwapRowProps(model.slug, llamaSwapRunning, llamaSwapContext, llamaSwap)
+                      ? llamaSwapRowProps(model.slug, llamaSwapRunning, llamaSwapContext, {
+                          canUnload: llamaSwap.canUnload,
+                          unload: (slug) =>
+                            swapGuard.guard({
+                              instanceId: model.instanceId,
+                              status: llamaSwap.status,
+                              model: slug,
+                              kind: "unload",
+                              proceed: () => llamaSwap.unload(slug),
+                            }),
+                        })
                       : {})}
                     jumpLabel={modelJumpLabelByKey.get(modelKey) ?? null}
                     disabledReason={disabledReason}
@@ -1275,6 +1302,10 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
             {props.listFooter}
           </div>
         </Combobox>
+        <LlamaSwapConfirmDialog
+          confirmation={swapGuard.confirmation}
+          onClose={swapGuard.closeConfirmation}
+        />
       </div>
     </TooltipProvider>
   );

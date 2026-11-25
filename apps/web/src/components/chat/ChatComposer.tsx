@@ -127,6 +127,7 @@ import {
   useRetainedContextPayloads,
 } from "./composerContextUndo";
 import { ComposerBanner } from "./ComposerBanner";
+import { useLlamaSwapLoadBanner } from "./useLlamaSwapLoadBanner";
 import { ComposerSurface } from "./ComposerSurface";
 import { CollapsedComposerPromptPreview } from "./CollapsedComposerPromptPreview";
 import { ComposerBannerStack, type ComposerBannerStackItem } from "./ComposerBannerStack";
@@ -2788,12 +2789,23 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
         },
       ]
     : [];
+  const llamaSwapLoadBanner = useLlamaSwapLoadBanner({
+    environmentId,
+    entry: selectedProviderEntry ?? undefined,
+    model: selectedModel,
+    busy: phase === "running" || phase === "connecting" || isSendBusy,
+  });
   const bannerItems: readonly ComposerBannerStackItem[] =
     runtimeModeCeilingDenial === undefined || activePendingProgress
-      ? [...props.bannerItems, ...replyBannerItems]
+      ? [
+          ...props.bannerItems,
+          ...replyBannerItems,
+          ...(llamaSwapLoadBanner ? [llamaSwapLoadBanner] : []),
+        ]
       : [
           ...props.bannerItems,
           ...replyBannerItems,
+          ...(llamaSwapLoadBanner ? [llamaSwapLoadBanner] : []),
           {
             id: "managed-runtime-mode",
             variant: "warning",
