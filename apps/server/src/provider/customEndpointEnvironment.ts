@@ -46,9 +46,14 @@ export function customEndpointEnvironment(
           endpoint.authHeader === "basic"
             ? `authorization: Basic ${btoa(key.includes(":") ? key : `:${key}`)}`
             : `api-key: ${key}`;
+        // Claude Code will not start without a credential. A Basic header counts as one; the
+        // `api-key` header does not, so it also gets a placeholder bearer token.
         env.push(
           variable("ANTHROPIC_CUSTOM_HEADERS", header, true),
-          variable("ANTHROPIC_AUTH_TOKEN", ""),
+          variable(
+            "ANTHROPIC_AUTH_TOKEN",
+            endpoint.authHeader === "api-key" ? "t3code-endpoint" : "",
+          ),
           variable("ANTHROPIC_API_KEY", ""),
         );
       }

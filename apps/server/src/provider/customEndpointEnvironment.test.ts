@@ -21,8 +21,12 @@ it("gives Claude one credential header in the endpoint's style", () => {
   });
   expect(env("claudeAgent", "api-key")).toMatchObject({
     ANTHROPIC_CUSTOM_HEADERS: "api-key: k",
-    ANTHROPIC_AUTH_TOKEN: "",
+    ANTHROPIC_AUTH_TOKEN: "t3code-endpoint",
     ANTHROPIC_API_KEY: "",
+  });
+  expect(env("claudeAgent", "basic")).toMatchObject({
+    ANTHROPIC_CUSTOM_HEADERS: `authorization: Basic ${btoa(":k")}`,
+    ANTHROPIC_AUTH_TOKEN: "",
   });
 });
 
