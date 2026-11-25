@@ -42,12 +42,12 @@ wire format, so treat those two as untested.
 Point a provider instance at the server's address. The server must be reachable from the
 machine that runs the environment, not from your browser or phone.
 
-| Provider | Where the address goes                                                                                                                            |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Claude   | `ANTHROPIC_BASE_URL` in the instance's **Environment variables**. Add `CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1` to list the server's models. |
-| Codex    | A custom `model_provider` with a `base_url` in Codex's `config.toml`. T3 Code adds the server's models to the picker.                             |
-| OpenCode | A provider with `options.baseURL` in `opencode.json`.                                                                                             |
-| Pi       | A provider with `baseUrl` in Pi's `models.json`.                                                                                                  |
+| Provider | Where the address goes                                                                                                                                                                |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Claude   | `ANTHROPIC_BASE_URL` in the instance's **Environment variables**. T3 Code lists the server's models itself, because Claude Code's own discovery keeps only names containing "claude". |
+| Codex    | A custom `model_provider` with a `base_url` in Codex's `config.toml`. T3 Code adds the server's models to the picker.                                                                 |
+| OpenCode | A provider with `options.baseURL` in `opencode.json`.                                                                                                                                 |
+| Pi       | A provider with `baseUrl` in Pi's `models.json`.                                                                                                                                      |
 
 The picker reads `/running` and `/v1/models` from the same address. A server that does not
 answer like llama-swap shows no badges, and the instance works as it did before.
