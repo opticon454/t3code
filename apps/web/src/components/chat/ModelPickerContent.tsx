@@ -32,7 +32,9 @@ import { ModelListRow } from "./ModelListRow";
 import { llamaSwapRowProps } from "./llamaSwapRowProps";
 import { LlamaSwapConfirmDialog } from "./LlamaSwapConfirmDialog";
 import { useLlamaSwapGuard } from "./useLlamaSwapGuard";
-import { useLlamaSwapStatus } from "./useLlamaSwapStatus";
+import { llamaSwapStatusKey, useLlamaSwapStatus, useLlamaSwapStatuses } from "./useLlamaSwapStatus";
+import { locateLlamaSwapModel } from "@t3tools/client-runtime/state/llamaSwap";
+import { useAtomCommand } from "../../state/use-atom-command";
 import { ModelPickerSidebar } from "./ModelPickerSidebar";
 import { useProviderWorkspaceSnapshotRefresh } from "./useProviderWorkspaceSnapshotRefresh";
 import { getProviderStatusMessage, hasProviderSetup } from "./ProviderStatusBanner";
@@ -54,7 +56,7 @@ import {
 import { ModelEsque } from "./providerIconUtils";
 import { isCommandPaletteOpen } from "../../commandPaletteBus";
 import { registerModelPickerContent } from "../../modelPickerVisibility";
-import { primaryServerKeybindingsAtom } from "../../state/server";
+import { primaryServerKeybindingsAtom, serverEnvironment } from "../../state/server";
 import {
   modelPickerJumpCommandForIndex,
   modelPickerJumpIndexFromCommand,
@@ -549,12 +551,12 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
     if (!resolvedModel) return null;
     if (additive && onToggleModel) {
       onToggleModel(instanceId, resolvedModel);
-    } else if (llamaSwap && instanceId === swapEntry?.instanceId) {
+    } else if (swapFor(instanceId, resolvedModel)) {
       // A dialog may take over; the pick then completes on confirm.
       let proceeded = false;
       swapGuard.guard({
         instanceId,
-        status: llamaSwap.status,
+        status: swapFor(instanceId, resolvedModel)!.status,
         model: resolvedModel,
         kind: "pick",
         proceed: () => {
@@ -728,20 +730,27 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
     const prefix = current.includes("/") ? current.slice(0, current.indexOf("/")) : "";
     return prefix in endpoints ? prefix : Object.keys(endpoints)[0];
   })();
-  /** The id llama-swap knows a slug by, or undefined when another server owns it. */
-  const swapModelId = (slug: string): string | undefined =>
-    swapSubProvider === undefined
-      ? slug
-      : slug.startsWith(`${swapSubProvider}/`)
-        ? slug.slice(swapSubProvider.length + 1)
-        : undefined;
-  const { view: llamaSwap, authFailed: llamaSwapAuthFailed } = useLlamaSwapStatus(
+  const { authFailed: llamaSwapAuthFailed } = useLlamaSwapStatus(
     props.environmentId,
     swapEntry,
     swapSubProvider,
   );
-  const llamaSwapRunning = new Map(llamaSwap?.status.running.map((entry) => [entry.model, entry]));
-  const llamaSwapContext = new Map(llamaSwap?.status.models.map((entry) => [entry.id, entry]));
+  // Each row shows the state of its own llama-swap server, whichever provider it is listed under.
+  const swapStatuses = useLlamaSwapStatuses(props.environmentId, instanceEntries);
+  const canUnloadSwap = useAtomValue(
+    serverEnvironment.unloadLlamaSwapModel.permissionAtom(props.environmentId),
+  );
+  const unloadSwap = useAtomCommand(serverEnvironment.unloadLlamaSwapModel);
+  const swapFor = (instanceId: ProviderInstanceId, slug: string) => {
+    const place = locateLlamaSwapModel(
+      entryByInstanceId.get(instanceId)?.snapshot ?? { auth: {} },
+      slug,
+    );
+    const status = place && swapStatuses.get(llamaSwapStatusKey(instanceId, place.subProvider));
+    return status && place
+      ? { status, modelId: place.modelId, subProvider: place.subProvider }
+      : undefined;
+  };
 
   const filteredModels = (() => {
     let result = flatModels;
@@ -778,13 +787,14 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
       groupFavorites: selectedInstanceId !== "favorites",
       instanceOrder: selectedInstanceId === "favorites" ? instanceOrder : [],
     });
-    // The loaded model leads its instance; the rest keep their order and stay selectable.
-    return llamaSwapRunning.size === 0
+    // A loaded model leads; the rest keep their order and stay selectable.
+    const isLoaded = (model: ModelPickerItem) => {
+      const swap = swapFor(model.instanceId, model.slug);
+      return swap?.status.running.some((entry) => entry.model === swap.modelId) ?? false;
+    };
+    return swapStatuses.size === 0
       ? sorted
-      : [
-          ...sorted.filter((model) => llamaSwapRunning.has(swapModelId(model.slug) ?? "")),
-          ...sorted.filter((model) => !llamaSwapRunning.has(swapModelId(model.slug) ?? "")),
-        ];
+      : [...sorted.filter(isLoaded), ...sorted.filter((model) => !isLoaded(model))];
   })();
 
   const legacySection = (() => {
@@ -1284,26 +1294,36 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
                     showInstanceBadge={badgedInstanceIds.has(model.instanceId)}
                     showNewBadge={model.badge === "new"}
                     unavailable={model.isUnavailable === true}
-                    {...(model.instanceId === selectedEntry?.instanceId &&
-                    llamaSwap &&
-                    swapModelId(model.slug) !== undefined
-                      ? llamaSwapRowProps(
-                          swapModelId(model.slug)!,
-                          llamaSwapRunning,
-                          llamaSwapContext,
-                          {
-                            canUnload: llamaSwap.canUnload,
-                            unload: (modelId) =>
-                              swapGuard.guard({
-                                instanceId: model.instanceId,
-                                status: llamaSwap.status,
-                                model: model.slug,
-                                kind: "unload",
-                                proceed: () => llamaSwap.unload(modelId),
-                              }),
-                          },
-                        )
-                      : {})}
+                    {...(() => {
+                      const swap = swapFor(model.instanceId, model.slug);
+                      if (!swap) return {};
+                      return llamaSwapRowProps(
+                        swap.modelId,
+                        new Map(swap.status.running.map((entry) => [entry.model, entry])),
+                        new Map(swap.status.models.map((entry) => [entry.id, entry])),
+                        {
+                          canUnload: canUnloadSwap,
+                          unload: (modelId) =>
+                            swapGuard.guard({
+                              instanceId: model.instanceId,
+                              status: swap.status,
+                              model: model.slug,
+                              kind: "unload",
+                              proceed: () =>
+                                void unloadSwap({
+                                  environmentId: props.environmentId!,
+                                  input: {
+                                    instanceId: model.instanceId,
+                                    ...(swap.subProvider === undefined
+                                      ? {}
+                                      : { subProvider: swap.subProvider }),
+                                    model: modelId,
+                                  },
+                                }),
+                            }),
+                        },
+                      );
+                    })()}
                     jumpLabel={modelJumpLabelByKey.get(modelKey) ?? null}
                     disabledReason={disabledReason}
                     onToggleFavorite={toggleFavorite}

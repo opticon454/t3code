@@ -1,5 +1,6 @@
 import { useAtomValue } from "@effect/atom-react";
-import type { EnvironmentId, LlamaSwapStatus } from "@t3tools/contracts";
+import type { EnvironmentId, LlamaSwapStatus, ProviderInstanceId } from "@t3tools/contracts";
+import { AsyncResult, Atom } from "effect/reactivity";
 import type { ProviderInstanceEntry } from "../../providerInstances";
 import { useMessages } from "gt-react";
 
@@ -66,4 +67,60 @@ export function useLlamaSwapStatus(
         }),
     },
   };
+}
+
+/** The key of one llama-swap server in `useLlamaSwapStatuses`: an instance, or its upstream provider. */
+export const llamaSwapStatusKey = (instanceId: string, subProvider?: string) =>
+  `${instanceId}\0${subProvider ?? ""}`;
+
+interface StatusTarget {
+  readonly instanceId: string;
+  readonly subProvider?: string;
+}
+
+const statusesAtom = Atom.family((key: string) =>
+  Atom.make((get): ReadonlyMap<string, LlamaSwapStatus> => {
+    const { environmentId, targets } = JSON.parse(key) as {
+      environmentId: EnvironmentId;
+      targets: ReadonlyArray<StatusTarget>;
+    };
+    const statuses = new Map<string, LlamaSwapStatus>();
+    for (const target of targets) {
+      const status = AsyncResult.getOrElse(
+        get(
+          serverEnvironment.llamaSwapStatus({
+            environmentId,
+            input: {
+              instanceId: target.instanceId as ProviderInstanceId,
+              ...(target.subProvider === undefined ? {} : { subProvider: target.subProvider }),
+            },
+          }),
+        ),
+        () => null,
+      );
+      if (status?.supported)
+        statuses.set(llamaSwapStatusKey(target.instanceId, target.subProvider), status);
+    }
+    return statuses;
+  }),
+);
+
+/**
+ * Live state of every llama-swap server behind the listed instances, so a row can show its own
+ * server's state wherever it appears. Only an instance with a custom endpoint is watched.
+ */
+export function useLlamaSwapStatuses(
+  environmentId: EnvironmentId | null,
+  entries: ReadonlyArray<ProviderInstanceEntry>,
+): ReadonlyMap<string, LlamaSwapStatus> {
+  const targets = entries.flatMap((entry): Array<StatusTarget> => [
+    ...(entry.snapshot.auth.endpoint ? [{ instanceId: entry.instanceId }] : []),
+    ...Object.keys(entry.snapshot.subProviderEndpoints ?? {}).map((subProvider) => ({
+      instanceId: entry.instanceId,
+      subProvider,
+    })),
+  ]);
+  return useAtomValue(
+    statusesAtom(JSON.stringify({ environmentId, targets: environmentId ? targets : [] })),
+  );
 }
