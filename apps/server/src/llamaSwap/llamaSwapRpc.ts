@@ -6,7 +6,7 @@ import * as Stream from "effect/Stream";
 
 import type * as ProviderInstanceRegistry from "../provider/ProviderInstanceRegistry.ts";
 import type { LlamaSwapEndpoint, LlamaSwapService, LlamaSwapStatus } from "./LlamaSwapService.ts";
-import { normalizeLlamaSwapOrigin, resolveLlamaSwapApiKey } from "./llamaSwapProtocol.ts";
+import { normalizeLlamaSwapOrigin, resolveLlamaSwapCredential } from "./llamaSwapProtocol.ts";
 import { sweepSwappedOut, type SweepThread } from "./swapSweep.ts";
 
 const POLL_INTERVAL = "1 second";
@@ -50,8 +50,8 @@ const resolveInstanceEndpoint = Effect.fn("LlamaSwapRpc.resolveInstanceEndpoint"
   const environment = Object.fromEntries(
     (instance.environment ?? []).map((variable) => [variable.name, variable.value]),
   );
-  const apiKey = resolveLlamaSwapApiKey(environment);
-  return { origin, ...(apiKey ? { apiKey } : {}) } satisfies LlamaSwapEndpoint;
+  const credential = resolveLlamaSwapCredential(environment);
+  return { origin, ...credential } satisfies LlamaSwapEndpoint;
 });
 
 export const makeLlamaSwapRpc = (
@@ -106,9 +106,10 @@ export const makeLlamaSwapRpc = (
       }
       if (!anyEndpoint) return [];
       // OpenCode and Pi prefix a slug with the upstream provider, which owns the endpoint.
+      // Only the endpoint is shared across threads of an instance; each thread keeps its own model.
       const located = new Map<
         string,
-        Option.Option<{ endpoint: LlamaSwapEndpoint; model: string }>
+        Option.Option<{ endpoint: LlamaSwapEndpoint; viaProvider: boolean }>
       >();
       const locate = Effect.fn("LlamaSwapRpc.locate")(function* (
         instanceId: ProviderInstanceId,
@@ -116,24 +117,30 @@ export const makeLlamaSwapRpc = (
       ) {
         const slash = model.indexOf("/");
         const key = `${instanceId}\0${slash < 0 ? "" : model.slice(0, slash)}`;
-        const known = located.get(key);
-        if (known) return known;
-        const viaProvider =
-          slash < 0
-            ? Option.none()
-            : yield* resolveInstanceEndpoint(
-                instances,
-                customEndpoint,
-                instanceId,
-                model.slice(0, slash),
-              ).pipe(Effect.option);
-        const found = Option.isSome(viaProvider)
-          ? Option.some({ endpoint: viaProvider.value, model: model.slice(slash + 1) })
-          : (yield* resolveInstanceEndpoint(instances, customEndpoint, instanceId).pipe(
-              Effect.option,
-            )).pipe(Option.map((endpoint) => ({ endpoint, model })));
-        located.set(key, found);
-        return found;
+        let known = located.get(key);
+        if (!known) {
+          const viaProvider =
+            slash < 0
+              ? Option.none()
+              : yield* resolveInstanceEndpoint(
+                  instances,
+                  customEndpoint,
+                  instanceId,
+                  model.slice(0, slash),
+                ).pipe(Effect.option);
+          known = Option.isSome(viaProvider)
+            ? Option.some({ endpoint: viaProvider.value, viaProvider: true })
+            : (yield* resolveInstanceEndpoint(instances, customEndpoint, instanceId).pipe(
+                Effect.option,
+              )).pipe(Option.map((endpoint) => ({ endpoint, viaProvider: false })));
+          located.set(key, known);
+        }
+        return known.pipe(
+          Option.map((place) => ({
+            endpoint: place.endpoint,
+            model: place.viaProvider ? model.slice(slash + 1) : model,
+          })),
+        );
       });
       const threads: Array<SweepThread> = [];
       const endpointByOrigin = new Map<string, LlamaSwapEndpoint>();

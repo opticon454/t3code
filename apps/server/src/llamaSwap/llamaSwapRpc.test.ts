@@ -129,6 +129,54 @@ effectIt.live("swapEvents stays silent when no instance has a custom endpoint", 
   }),
 );
 
+effectIt.live("swapEvents reports each thread with its own model", () =>
+  Effect.gen(function* () {
+    const base = instances("http://10.0.0.5:8080/v1");
+    const withList = {
+      getInstance: (requested: ProviderInstanceId) =>
+        (base as { getInstance: (id: ProviderInstanceId) => never }).getInstance(requested),
+      listInstances: Effect.succeed([
+        {
+          instanceId: id,
+          snapshot: {
+            getSnapshot: Effect.succeed({
+              auth: { status: "authenticated", endpoint: "http://10.0.0.5:8080/v1" },
+            }),
+          },
+        },
+      ]),
+    } as never;
+    const loaded = {
+      supported: true,
+      authFailed: false,
+      running: [{ model: "gpt", state: "ready" as const }],
+      models: [{ id: "qwen" }, { id: "llama" }, { id: "gpt" }],
+    };
+    const service: LlamaSwapService["Service"] = {
+      ...swap([]),
+      status: () => Effect.succeed(loaded),
+    };
+    const thread = (threadId: string, model: string) => ({
+      id: threadId as never,
+      projectId: "project" as never,
+      instanceId: id,
+      model,
+    });
+    const [events] = yield* makeLlamaSwapRpc(
+      withList,
+      service,
+      noSaved,
+      Effect.succeed([thread("a", "qwen"), thread("b", "llama")]),
+    ).swapEvents.pipe(Stream.take(1), Stream.runCollect);
+    expect(
+      events?.map((event) => [event.threadId, event.previousModel, event.loadedModel]),
+    ).toEqual([
+      ["a", "qwen", "gpt"],
+      ["b", "llama", "gpt"],
+    ]);
+  }),
+);
+
 effectIt.effect("unloads on the endpoint of the named upstream provider", () =>
   Effect.gen(function* () {
     const calls: Array<unknown> = [];
