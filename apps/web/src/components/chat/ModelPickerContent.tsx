@@ -29,6 +29,8 @@ import {
 } from "react";
 import { ChevronRightIcon } from "lucide-react";
 import { ModelListRow } from "./ModelListRow";
+import { llamaSwapRowProps } from "./llamaSwapRowProps";
+import { useLlamaSwapStatus } from "./useLlamaSwapStatus";
 import { ModelPickerSidebar } from "./ModelPickerSidebar";
 import { useProviderWorkspaceSnapshotRefresh } from "./useProviderWorkspaceSnapshotRefresh";
 import { getProviderStatusMessage, hasProviderSetup } from "./ProviderStatusBanner";
@@ -699,6 +701,13 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
   const showSidebar = !isSearching && sidebarInstanceEntries.length > 0;
   const instanceOrder = instanceEntries.map((entry) => entry.instanceId);
 
+  const llamaSwap = useLlamaSwapStatus(
+    props.environmentId,
+    selectedInstanceId === "favorites" ? undefined : entryByInstanceId.get(selectedInstanceId),
+  );
+  const llamaSwapRunning = new Map(llamaSwap?.status.running.map((entry) => [entry.model, entry]));
+  const llamaSwapContext = new Map(llamaSwap?.status.models.map((entry) => [entry.id, entry]));
+
   const filteredModels = (() => {
     let result = flatModels;
 
@@ -729,11 +738,18 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
       result = result.filter((m) => m.instanceId === selectedInstanceId);
     }
 
-    return sortProviderModelItems(result, {
+    const sorted = sortProviderModelItems(result, {
       favoriteModelKeys: favoritesSet,
       groupFavorites: selectedInstanceId !== "favorites",
       instanceOrder: selectedInstanceId === "favorites" ? instanceOrder : [],
     });
+    // The loaded model leads its instance; the rest keep their order and stay selectable.
+    return llamaSwapRunning.size === 0
+      ? sorted
+      : [
+          ...sorted.filter((model) => llamaSwapRunning.has(model.slug)),
+          ...sorted.filter((model) => !llamaSwapRunning.has(model.slug)),
+        ];
   })();
 
   const legacySection = (() => {
@@ -1233,6 +1249,9 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
                     showInstanceBadge={badgedInstanceIds.has(model.instanceId)}
                     showNewBadge={model.badge === "new"}
                     unavailable={model.isUnavailable === true}
+                    {...(model.instanceId === selectedEntry?.instanceId && llamaSwap
+                      ? llamaSwapRowProps(model.slug, llamaSwapRunning, llamaSwapContext, llamaSwap)
+                      : {})}
                     jumpLabel={modelJumpLabelByKey.get(modelKey) ?? null}
                     disabledReason={disabledReason}
                     onToggleFavorite={toggleFavorite}

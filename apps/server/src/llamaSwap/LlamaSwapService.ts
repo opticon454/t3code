@@ -73,6 +73,54 @@ type JsonResult =
 
 const FAILED: JsonResult = { _tag: "failed" };
 
+const request = (
+  endpoint: LlamaSwapEndpoint,
+  method: "GET" | "POST",
+  path: string,
+): HttpClientRequest.HttpClientRequest => {
+  const base = `${endpoint.origin}${path}`;
+  const req = method === "GET" ? HttpClientRequest.get(base) : HttpClientRequest.post(base);
+  // One header only: a request carrying both Bearer and x-api-key hung against llama-swap.
+  return endpoint.apiKey ? HttpClientRequest.bearerToken(req, endpoint.apiKey) : req;
+};
+
+const getJson = (
+  client: HttpClient.HttpClient,
+  endpoint: LlamaSwapEndpoint,
+  path: string,
+): Effect.Effect<JsonResult> =>
+  client.execute(request(endpoint, "GET", path)).pipe(
+    Effect.flatMap((response): Effect.Effect<JsonResult, unknown> =>
+      response.status === 401 || response.status === 403
+        ? Effect.succeed({ _tag: "authFailed" })
+        : response.status >= 200 && response.status < 300
+          ? response.json.pipe(Effect.map((body): JsonResult => ({ _tag: "ok", body })))
+          : Effect.succeed(FAILED),
+    ),
+    Effect.timeout(REQUEST_TIMEOUT),
+    Effect.orElseSucceed(() => FAILED),
+  );
+
+export const fetchLlamaSwapStatus = Effect.fn("LlamaSwapService.status")(function* (
+  client: HttpClient.HttpClient,
+  endpoint: LlamaSwapEndpoint,
+): Effect.fn.Return<LlamaSwapStatus> {
+  const running = yield* getJson(client, endpoint, "/running");
+  if (running._tag === "authFailed") {
+    return { supported: false, authFailed: true, running: [], models: [] };
+  }
+  const parsed = running._tag === "ok" ? parseRunning(running.body) : undefined;
+  if (!parsed) return { supported: false, authFailed: false, running: [], models: [] };
+  const listing = yield* getJson(client, endpoint, "/v1/models");
+  const models = listing._tag === "ok" ? parseModelList(listing.body) : [];
+  return {
+    supported: true,
+    authFailed: false,
+    running: withListedContext(parsed, models),
+    models,
+  };
+});
+
 interface LogTail {
   latestLine: string | undefined;
   lastAccessedMs: number;
@@ -83,49 +131,8 @@ const make = Effect.gen(function* () {
   const client = yield* HttpClient.HttpClient;
   const scope = yield* Effect.scope;
   const tails = new Map<string, LogTail>();
-
-  const request = (
-    endpoint: LlamaSwapEndpoint,
-    method: "GET" | "POST",
-    path: string,
-  ): HttpClientRequest.HttpClientRequest => {
-    const base = `${endpoint.origin}${path}`;
-    const req = method === "GET" ? HttpClientRequest.get(base) : HttpClientRequest.post(base);
-    // One header only: a request carrying both Bearer and x-api-key hung against llama-swap.
-    return endpoint.apiKey ? HttpClientRequest.bearerToken(req, endpoint.apiKey) : req;
-  };
-
-  const getJson = (endpoint: LlamaSwapEndpoint, path: string): Effect.Effect<JsonResult> =>
-    client.execute(request(endpoint, "GET", path)).pipe(
-      Effect.flatMap((response): Effect.Effect<JsonResult, unknown> =>
-        response.status === 401 || response.status === 403
-          ? Effect.succeed({ _tag: "authFailed" })
-          : response.status >= 200 && response.status < 300
-            ? response.json.pipe(Effect.map((body): JsonResult => ({ _tag: "ok", body })))
-            : Effect.succeed(FAILED),
-      ),
-      Effect.timeout(REQUEST_TIMEOUT),
-      Effect.orElseSucceed(() => FAILED),
-    );
-
-  const status: LlamaSwapService["Service"]["status"] = Effect.fn("LlamaSwapService.status")(
-    function* (endpoint) {
-      const running = yield* getJson(endpoint, "/running");
-      if (running._tag === "authFailed") {
-        return { supported: false, authFailed: true, running: [], models: [] };
-      }
-      const parsed = running._tag === "ok" ? parseRunning(running.body) : undefined;
-      if (!parsed) return { supported: false, authFailed: false, running: [], models: [] };
-      const listing = yield* getJson(endpoint, "/v1/models");
-      const models = listing._tag === "ok" ? parseModelList(listing.body) : [];
-      return {
-        supported: true,
-        authFailed: false,
-        running: withListedContext(parsed, models),
-        models,
-      };
-    },
-  );
+  const status: LlamaSwapService["Service"]["status"] = (endpoint) =>
+    fetchLlamaSwapStatus(client, endpoint);
 
   const unload: LlamaSwapService["Service"]["unload"] = Effect.fn("LlamaSwapService.unload")(
     function* (endpoint, model) {

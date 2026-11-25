@@ -1,7 +1,6 @@
 import { ProviderInstanceId } from "@t3tools/contracts";
 import { it as effectIt } from "@effect/vitest";
 import * as Effect from "effect/Effect";
-import * as Option from "effect/Option";
 import * as Stream from "effect/Stream";
 import { expect } from "vite-plus/test";
 
@@ -37,7 +36,7 @@ const swap = (calls: Array<unknown>): LlamaSwapService["Service"] => ({
     model === "bad"
       ? Effect.fail(new LlamaSwapUnloadError({ status: 401 }))
       : Effect.sync(() => void calls.push(["unload", endpoint, model])),
-  latestLogLine: () => Effect.succeed(Option.none()),
+  latestLogLine: () => Effect.succeedNone,
 });
 
 effectIt.effect("unloads on the instance's own endpoint with its configured key", () =>
