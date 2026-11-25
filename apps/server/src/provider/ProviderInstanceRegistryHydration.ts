@@ -93,6 +93,9 @@ export const deriveProviderInstanceConfigMap = (
     if (!endpoint) continue;
     merged[instanceId] = {
       ...instance,
+      ...(endpoint.defaultModel === undefined
+        ? {}
+        : { endpointDefaultModel: endpoint.defaultModel }),
       environment: [
         ...customEndpointEnvironment(instance.driver, endpoint),
         ...(instance.environment ?? []),

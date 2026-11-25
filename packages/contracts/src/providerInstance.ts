@@ -80,6 +80,8 @@ export const ProviderInstanceConfig = Schema.Struct({
   environment: Schema.optionalKey(ProviderInstanceEnvironment),
   /** A saved custom model endpoint whose URL, key and header this instance uses. */
   endpointId: Schema.optionalKey(CustomModelEndpointId),
+  /** Derived by the server from the endpoint's default model. Ignored when written. */
+  endpointDefaultModel: Schema.optionalKey(TrimmedNonEmptyString),
   enabled: Schema.optionalKey(Schema.Boolean),
   config: Schema.optionalKey(Schema.Unknown),
 });

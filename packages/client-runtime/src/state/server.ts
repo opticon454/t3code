@@ -1630,6 +1630,10 @@ export function createServerEnvironmentAtoms<R, E>(
       tag: WS_METHODS.providerLlamaSwapSwapEvents,
       idleTtlMs: 0,
     }),
+    listCustomEndpointModels: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:settings:custom-endpoint-models",
+      tag: WS_METHODS.customEndpointListModels,
+    }),
     unloadLlamaSwapModel: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:provider:llama-swap-unload",
       tag: WS_METHODS.providerLlamaSwapUnload,

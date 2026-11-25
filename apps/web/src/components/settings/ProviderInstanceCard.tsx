@@ -67,6 +67,7 @@ import { ProviderModelsSection } from "./ProviderModelsSection";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import { ProviderAccentColorPicker } from "./ProviderAccentColorPicker";
 import { RedactedSensitiveText } from "./RedactedSensitiveText";
+import { InstanceEndpointRow } from "./InstanceEndpointRow";
 import { SettingResetButton, SettingsRow, SettingsSection } from "./settingsLayout";
 import { AcpSessionManagementSection } from "./AcpSessionManagementSection";
 import { FoldedSettingsSection } from "./FoldedSettingsSection";
@@ -1447,6 +1448,16 @@ export function ProviderInstanceCard({
           className={readOnly ? "opacity-50 select-none" : undefined}
         >
           {runtimeFields}
+        </SettingsSection>
+      ) : null}
+
+      {environmentId !== undefined && !readOnly ? (
+        <SettingsSection title={gt("Endpoint")}>
+          <InstanceEndpointRow
+            environmentId={environmentId}
+            instance={instance}
+            onUpdate={(next) => void onUpdate(next)}
+          />
         </SettingsSection>
       ) : null}
 

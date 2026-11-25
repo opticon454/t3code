@@ -1,7 +1,9 @@
 import * as Schema from "effect/Schema";
 
 import { ProjectId, ThreadId, TrimmedNonEmptyString } from "./baseSchemas.ts";
+import { CustomModelEndpointId } from "./customModelEndpointId.ts";
 import { ProviderInstanceId } from "./providerInstance.ts";
+import { CustomModelEndpointConfig } from "./settings.ts";
 
 /** A llama-swap server is addressed by the provider instance that uses it, never by URL. */
 export const LlamaSwapSubscribeInput = Schema.Struct({
@@ -61,3 +63,26 @@ export const LlamaSwapSwapEvent = Schema.Struct({
   loadedModel: TrimmedNonEmptyString,
 });
 export type LlamaSwapSwapEvent = typeof LlamaSwapSwapEvent.Type;
+
+/** Lists an endpoint's models, for the Discover button and the default-model choice. */
+export const ListCustomEndpointModelsInput = Schema.Struct({
+  id: CustomModelEndpointId,
+  /** Unsaved form values to try. A redacted key keeps the one saved under `id`. */
+  config: Schema.optional(CustomModelEndpointConfig),
+});
+export type ListCustomEndpointModelsInput = typeof ListCustomEndpointModelsInput.Type;
+
+export const CustomEndpointModel = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  contextTokens: Schema.optionalKey(Schema.Int.check(Schema.isGreaterThan(0))),
+});
+export type CustomEndpointModel = typeof CustomEndpointModel.Type;
+
+export class CustomEndpointError extends Schema.TaggedError<CustomEndpointError>()(
+  "CustomEndpointError",
+  { detail: Schema.String },
+) {
+  override get message(): string {
+    return this.detail;
+  }
+}

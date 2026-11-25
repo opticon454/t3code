@@ -48,6 +48,9 @@ import * as RpcMiddleware from "effect/rpc/RpcMiddleware";
 import { IsoDateTime, NonNegativeInt, TrimmedNonEmptyString } from "./baseSchemas.ts";
 import { SecretSourceCheckResult } from "./settingsSecretValue.ts";
 import {
+  CustomEndpointError,
+  CustomEndpointModel,
+  ListCustomEndpointModelsInput,
   LlamaSwapError,
   LlamaSwapStatus,
   LlamaSwapSwapEvent,
@@ -548,6 +551,7 @@ export const WS_METHODS = {
   providerLlamaSwapSubscribe: "provider.llamaSwap.subscribe",
   providerLlamaSwapUnload: "provider.llamaSwap.unload",
   providerLlamaSwapSwapEvents: "provider.llamaSwap.swapEvents",
+  customEndpointListModels: "customEndpoint.listModels",
 
   vcsPull: "vcs.pull",
   vcsRefreshStatus: "vcs.refreshStatus",
@@ -932,6 +936,12 @@ const WsProviderLlamaSwapSwapEventsRpc = Rpc.make(WS_METHODS.providerLlamaSwapSw
   success: Schema.Array(LlamaSwapSwapEvent),
   error: EnvironmentAuthorizationError,
   stream: true,
+});
+
+const WsCustomEndpointListModelsRpc = Rpc.make(WS_METHODS.customEndpointListModels, {
+  payload: ListCustomEndpointModelsInput,
+  success: Schema.Array(CustomEndpointModel),
+  error: Schema.Union([CustomEndpointError, EnvironmentAuthorizationError]),
 });
 
 const WsProviderLlamaSwapUnloadRpc = Rpc.make(WS_METHODS.providerLlamaSwapUnload, {
@@ -2545,6 +2555,7 @@ export const WsRpcGroup = RpcGroup.make(
   WsProviderLlamaSwapSubscribeRpc,
   WsProviderLlamaSwapUnloadRpc,
   WsProviderLlamaSwapSwapEventsRpc,
+  WsCustomEndpointListModelsRpc,
   WsServerUpdateServerRpc,
   WsServerGetNpmReleaseRpc,
   WsServerUpdateServerWithProgressRpc,

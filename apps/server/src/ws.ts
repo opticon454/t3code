@@ -195,8 +195,9 @@ import * as AcpRegistrySupport from "@t3tools/provider-acp-registry/server/AcpRe
 import * as AcpRegistryRuntimeCoordinator from "@t3tools/provider-acp-registry/server/AcpRegistryRuntimeCoordinator";
 import * as ProviderMaintenanceRunner from "./provider/providerMaintenanceRunner.ts";
 import * as ProviderAuthService from "./provider/ProviderAuthService.ts";
+import { HttpClient } from "effect/http";
 import * as LlamaSwap from "./llamaSwap/LlamaSwapService.ts";
-import { makeCustomEndpointLookup } from "./llamaSwap/customEndpoint.ts";
+import { makeCustomEndpointLookup, makeCustomEndpointModels } from "./llamaSwap/customEndpoint.ts";
 import { makeLlamaSwapRpc } from "./llamaSwap/llamaSwapRpc.ts";
 import * as ProviderInstallation from "./provider/providerInstallation.ts";
 import * as ServerSelfUpdate from "./cloud/selfUpdate.ts";
@@ -1595,6 +1596,11 @@ export const layerWsRpc = (
       const serverSettings = yield* ServerSettings.ServerSettingsService;
       const hostEnvironment = yield* HostProcess.Environment;
       const secretResolver = yield* SecretResolver.SecretResolver;
+      const customEndpointModels = makeCustomEndpointModels(
+        serverSettings,
+        secretResolver,
+        yield* HttpClient.HttpClient,
+      );
       const llamaSwapRpc = makeLlamaSwapRpc(
         providerInstances,
         yield* LlamaSwap.LlamaSwapService,
@@ -2812,6 +2818,7 @@ export const layerWsRpc = (
         [WS_METHODS.providerInstallSubscribe]: (input) => providerInstallation.subscribe(input),
         [WS_METHODS.providerInstallRemove]: (input) => providerInstallation.remove(input),
         [WS_METHODS.providerLlamaSwapSubscribe]: (input) => llamaSwapRpc.subscribe(input),
+        [WS_METHODS.customEndpointListModels]: (input) => customEndpointModels.list(input),
         [WS_METHODS.providerLlamaSwapSwapEvents]: () => llamaSwapRpc.swapEvents,
         [WS_METHODS.providerLlamaSwapUnload]: (input) => llamaSwapRpc.unload(input),
         [WS_METHODS.serverUpdateServer]: (input) => serverSelfUpdate.update(input),

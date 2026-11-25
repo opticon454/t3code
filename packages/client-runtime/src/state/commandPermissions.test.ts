@@ -160,6 +160,7 @@ describe("command permissions", () => {
     { method: WS_METHODS.providerMcpSignInStart, scope: AuthProvidersManageScope },
     { method: WS_METHODS.providerMcpSignInComplete, scope: AuthProvidersManageScope },
     { method: WS_METHODS.providerLlamaSwapUnload, scope: AuthProvidersManageScope },
+    { method: WS_METHODS.customEndpointListModels, scope: AuthSettingsWriteScope },
   ])("requires the destination $scope grant for $method", ({ method, scope }) =>
     Effect.gen(function* () {
       const registry = yield* setup;

@@ -1117,6 +1117,17 @@ export const SETTINGS_SEARCH_ITEMS = [
     textGeneratorsOnly: true,
   },
   {
+    id: "custom-model-endpoints",
+    title: msg("Custom model endpoints"),
+    to: "/settings/providers",
+    searchTerms: [
+      msg(
+        "llama-swap azure openai gateway base url api key auth header api-key x-api-key bearer context length default model discover",
+      ),
+    ],
+    providerSettingsOnly: true,
+  },
+  {
     id: "provider-health-check-interval",
     title: msg("Health check interval"),
     to: "/settings/providers",

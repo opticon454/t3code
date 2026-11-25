@@ -93,6 +93,7 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.providerLlamaSwapSubscribe]: AuthOrchestrationReadScope,
   [WS_METHODS.providerLlamaSwapUnload]: AuthProvidersManageScope,
   [WS_METHODS.providerLlamaSwapSwapEvents]: AuthOrchestrationReadScope,
+  [WS_METHODS.customEndpointListModels]: AuthSettingsWriteScope,
   [WS_METHODS.serverUpdateServer]: AuthEnvironmentMaintainScope,
   [WS_METHODS.serverUpdateServerWithProgress]: AuthEnvironmentMaintainScope,
   [WS_METHODS.serverCommitDesktopUpdate]: AuthEnvironmentMaintainScope,

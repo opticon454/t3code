@@ -8306,6 +8306,53 @@
   "b1137657751dd7f0": "복사할 위치…",
   "5bcce79726ce6ad8": "사용자 지정 옵션이 없습니다. 입력창은 제공자의 기본 옵션을 사용합니다.",
   "b584f8e39d1179c7": "사용자 지정 옵션",
+  "384dd2c0473851de": "No custom model endpoints yet",
+  "af8723d2bc2be8ee": "Add a model server, such as llama-swap or an Azure deployment. Choose it on a provider instance to send that instance's requests there.",
+  "1ece6e9c15a13601": "{name}에 대한 추가 작업",
+  "d96a0c7f4f4160cb": "{count, plural, one {# model found} other {# models found}}",
+  "97c450ddf94616b9": "Add custom model endpoint",
+  "b154ab9e383a04e3": "Edit custom model endpoint",
+  "09d15d0181299690": "Auth header",
+  "53a4fc2ccee378e7": "api-key (Azure OpenAI)",
+  "eae750e1cd08f1df": "x-api-key",
+  "e698e61f5dbb414f": "Basic",
+  "854fdcc980050a87": "Authorization: Bearer (default)",
+  "27d4ceda6c76a7ef": "No default (the provider picks its own)",
+  "5df431a8fed142f4": "Discovering…",
+  "615598dae006efe5": "Discover models",
+  "60f4c9e4f0f33ec5": "Add endpoint",
+  "f5b66c481aa3e4df": "편집",
+  "111a44209dc6e701": "제거",
+  "a3538ba5ca802bd7": [
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    "을(를) 제거할까요?"
+  ],
+  "f2acd8ccf5191567": [
+    "This deletes the API key stored on ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    ". Provider instances that use this endpoint go back to their own settings."
+  ],
+  "29aa0288ba3a9731": "Id",
+  "a5a0d91ee6279b47": "Short and stable. Lower case letters, numbers, - and _.",
+  "12213bee093a9859": "Label",
+  "c732b08a5fa8c3d7": "기본 URL",
+  "14254b7e026d7cd8": "Default context length (tokens)",
+  "166070aec73fb9a8": "Used for models whose size cannot be discovered. It is the model's whole window; the Claude floor check divides it by the slot count when one is known. Leave empty to let each CLI assume its own default.",
+  "a5d2e8fbe9bac047": "API key (optional)",
+  "92967d0c209f4fbf": "Left blank on edit keeps the existing key.",
+  "167fa69079c4fdfe": "Auth header",
+  "6bfaefc1f13a9871": "Never sends two headers. Some servers hang if you do.",
+  "ece2b84b41f087ff": "API version (Azure only)",
+  "50c5f751095dd276": "Default model",
+  "5f67146662d91cc5": "What new threads on an instance using this endpoint start with.",
   "3e90738d0ff19a29": "데이터베이스",
   "9e28cb72cb075933": "확보된 데이터베이스 공간 회수",
   "881b21a84162fe36": "이 데이터베이스에는 기록 정리로 확보된 공간이 아직 남아 있습니다.",
@@ -8401,7 +8448,6 @@
   "0c99fa183ed512e8": "일부에서 {platform} 사용 가능",
   "e6886a7f77b73a8e": "{platform} 사용할 수 없음",
   "b0b7610d9860d18d": "이 머신에 설정되지 않았습니다.",
-  "f5b66c481aa3e4df": "편집",
   "3b20ef0670ae4b0b": "SSH로 연결된 머신",
   "121ccffacb6b8c6d": "Expo Simulators",
   "130b55a1410a8030": "Simlock 풀(알파)",
@@ -8669,6 +8715,8 @@
   "e8622c39abe68f9d": "기본값",
   "5383ef2d2c09cdf7": "글꼴 검색…",
   "ea08337bcadd35b4": "글꼴이 없습니다.",
+  "3fd9b8551255f81c": "Custom model endpoint",
+  "36b14024e1385523": "Sends this instance's requests to a saved endpoint, with its URL, key and auth header. Variables set below still win.",
   "d6ad43bc4b700a88": "지울 브라우저 프로필 데이터가 없습니다.",
   "ad8efd437b301a37": "시스템",
   "42e23caa6ef99cad": "라이트",
@@ -9239,7 +9287,6 @@
   "e749b8ba2ff18f8f": "프로젝트에 {name} 추가",
   "6d08f0285e2bbf34": "폴더 추가",
   "b7820a37d8ff1918": "이 폴더 안의 저장소는 그곳에 생기는 즉시 프로젝트에 포함됩니다. 다른 위치의 저장소를 가져오려면 폴더를 추가하세요.",
-  "111a44209dc6e701": "제거",
   "daafb41c2b3c066f": "작업 영역 파일에 있음",
   "2c5c798252f91fdc": "추가",
   "7e4d1ce9725c2327": "이 프로젝트의 컴퓨터 어디에 있든 저장소나 폴더를 추적합니다.",
@@ -9425,6 +9472,7 @@
   "c45028de5c2f6cbb": "인스턴스 레이블",
   "cf69675106e4bf46": "설정",
   "22078dd501ba3102": "런타임",
+  "dc7fed3f4aeb6bc6": "Endpoint",
   "288c2d92df27a68c": "모델",
   "68a76cecbc1e0b6d": "변수 추가",
   "e141c49816ed7a1f": "이 프로젝트에서 재정의됨",
@@ -10045,14 +10093,6 @@
   ],
   "13d4f258e93f1dc1": "제공자 변수가 읽는 시크릿 제공자를 관리하려면 환경을 연결하세요.",
   "88466f5a03be2419": "환경 전체 설정입니다. 변경하려면 환경을 선택하세요.",
-  "a3538ba5ca802bd7": [
-    {
-      "i": 1,
-      "k": "_gt_value_1",
-      "v": "v"
-    },
-    "을(를) 제거할까요?"
-  ],
   "0d5b3b39f92c04e4": "제공자 제거",
   "c52bdbe39649742c": [
     {
@@ -11255,7 +11295,6 @@
   "2d411bb0736c0643": "아직 텍스트 생성기가 없습니다",
   "85eb2d15da7d016f": "코딩 에이전트를 시작하지 않고 스레드 제목, 커밋 메시지 등 짧은 텍스트를 작성하려면 모델 API를 추가하세요.",
   "1d32dad13ca765db": "끔 · ",
-  "1ece6e9c15a13601": "{name}에 대한 추가 작업",
   "ebffe4dabf52835f": "{name} 사용",
   "b663e2e129c61493": "텍스트 생성기 추가",
   "149ffa363168a419": "코딩 에이전트를 시작하지 않고 스레드 제목, 커밋 메시지 등 짧은 텍스트를 작성합니다. API 키는 이 환경에 저장됩니다.",
@@ -11289,7 +11328,6 @@
     "에 저장된 API 키가 삭제됩니다. 이 생성기를 사용하도록 설정된 항목은 텍스트 생성 모델로 대체됩니다."
   ],
   "2e487089c231536b": "서비스",
-  "c732b08a5fa8c3d7": "기본 URL",
   "3953d1cccd71ab7e": "이름(선택 사항)",
   "304d6712ac5d3a89": [
     {
@@ -11992,6 +12030,8 @@
   "9d9d31a4f3d5ff69": "사용량 소스 CLIProxyAPI CLI 프록시 허브 할당량 구독 한도 관리 키 추가 제거",
   "d65fa0946585b245": "텍스트 생성기",
   "e6fd69a8a3bb69e2": "모델 API API 키 OpenAI OpenRouter Anthropic Ollama LM Studio 사용자 지정 엔드포인트 기본 URL 스레드 제목 커밋 메시지",
+  "ed42654d1844b706": "Custom model endpoints",
+  "78c30a19b4ff0dec": "llama-swap azure openai gateway base url api key auth header api-key x-api-key bearer context length default model discover",
   "f2b07faba1229ce7": "상태 확인 간격",
   "5c9dc9970db79fe2": "새로 고침 가용성 버전 인증 상태 모델 백그라운드 검사 초 끔",
   "056ba6a180d114b5": "허용 끄기 켜기 열기 조작 미리 보기 도구 세션 프로젝트 재정의",

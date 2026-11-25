@@ -90,6 +90,13 @@ const withLivePresentation = (
   let current = created;
   const restamp = <S extends ServerProvider>(snapshot: S): S => {
     const next: { -readonly [K in keyof S]: S[K] } = { ...snapshot };
+    // An endpoint's default model leads new threads on this instance, when the CLI lists it.
+    const preferred = created.endpointDefaultModel;
+    if (preferred !== undefined && snapshot.models.some((model) => model.slug === preferred)) {
+      next.models = snapshot.models.map(({ isDefault: _was, ...model }) =>
+        model.slug === preferred ? { ...model, isDefault: true } : model,
+      ) as S["models"];
+    }
     for (const key of ["displayName", "accentColor"] as const) {
       const value = current[key];
       if (value === created[key]) continue;
