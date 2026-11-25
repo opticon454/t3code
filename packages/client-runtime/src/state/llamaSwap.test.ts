@@ -92,13 +92,23 @@ describe("contextWarning", () => {
       floorTokens: 20_000,
     });
     expect(contextWarning({ driver: claude, contextTokens: 65_536, slots: 1 })).toBeUndefined();
+    expect(contextWarning({ driver: "codex", contextTokens: 8_192, slots: 1 })).toEqual({
+      kind: "tooSmall",
+      perSlotTokens: 8_192,
+      floorTokens: 12_000,
+    });
+    expect(contextWarning({ driver: "pi", contextTokens: 16_384, slots: 1 })).toMatchObject({
+      kind: "tooSmall",
+      floorTokens: 24_000,
+    });
+    expect(contextWarning({ driver: "opencode", contextTokens: 16_384, slots: 1 })).toBeUndefined();
     expect(contextWarning({ driver: claude, contextTokens: undefined, slots: undefined })).toEqual({
       kind: "unknown",
     });
   });
 
   it("stays quiet for a provider with no measured floor", () => {
-    expect(contextWarning({ driver: "codex", contextTokens: 1024, slots: 1 })).toBeUndefined();
+    expect(contextWarning({ driver: "cursor", contextTokens: 1024, slots: 1 })).toBeUndefined();
   });
 });
 

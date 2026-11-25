@@ -57,12 +57,16 @@ export function modelSwapConflicts(input: {
 }
 
 /**
- * Tokens one request needs before the model has room to answer. Claude's figure comes from a
- * real llama-swap run: its first request, "say hi in five words", was 16,010 tokens (system
- * prompt and tools), so the floor adds headroom for a reply. Codex, OpenCode and Pi have no
- * floor until measured, so they never warn.
+ * Tokens one request needs before the model has room to answer. Each figure is the size of a
+ * real first request ("say hi in five words") that llama-swap rejected for a small window,
+ * plus headroom for a reply: Claude 16,010, Codex 9,695, OpenCode 7,585, Pi 19,756.
  */
-const CONTEXT_FLOOR_TOKENS: Readonly<Record<string, number>> = { claudeAgent: 20_000 };
+const CONTEXT_FLOOR_TOKENS: Readonly<Record<string, number>> = {
+  claudeAgent: 20_000,
+  codex: 12_000,
+  opencode: 10_000,
+  pi: 24_000,
+};
 
 export type ContextWarning =
   | { readonly kind: "unknown" }

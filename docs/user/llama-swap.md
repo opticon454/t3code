@@ -88,14 +88,14 @@ also set `LLAMA_SWAP_API_KEY`.
 
 ### Context warnings
 
-Claude Code's first request is about 16,000 tokens, so T3 Code asks for a window of at least
-20,000 tokens per slot. If a model's window per slot is below that, or llama-swap does not
-report it, the switch dialog warns you and offers **Use anyway**. llama-swap reports a
+A provider's first request is already large: about 16,000 tokens for Claude, 9,700 for Codex,
+7,600 for OpenCode and 19,800 for Pi. T3 Code asks for a window per slot of at least 20,000
+tokens for Claude, 12,000 for Codex, 10,000 for OpenCode and 24,000 for Pi. If a model's
+window per slot is below that, or llama-swap does not report it, the switch dialog warns you and offers **Use anyway**. llama-swap reports a
 model's window only once it has loaded the model, or if the model's entry sets it. Raise the
 model's context size in llama-swap's config to fix a small window. Claude Code does not know
 a local model's window and cannot be set to compact below 100,000 tokens, so long sessions
-need a window of 100,000 tokens or more. Other providers have no warning yet because their requirements have
-not been measured.
+need a window of 100,000 tokens or more.
 
 ## Limits
 
